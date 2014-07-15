@@ -1,0 +1,34 @@
+{
+  "name": "consul",
+  "version": "0.1.1",
+  "description": "An API wrapper for Consul's HTTP API",
+  "main": "src/api.js",
+  "scripts": {
+    "test": "gulp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/arobson/node-consul"
+  },
+  "keywords": [
+    "consul"
+  ],
+  "author": "Alex Robson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/arobson/node-consul/issues"
+  },
+  "homepage": "https://github.com/arobson/node-consul",
+  "devDependencies": {
+    "gulp": "^3.6.1",
+    "gulp-mocha": "^0.4.1",
+    "should": "^3.3.1"
+  },
+  "dependencies": {
+    "gulp": "^3.8.6",
+    "lodash": "^2.4.1",
+    "monologue.js": "^0.1.4",
+    "request": "^2.34.0",
+    "when": "^3.1.0"
+  }
+}

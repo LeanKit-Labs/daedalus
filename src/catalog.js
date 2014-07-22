@@ -1,145 +1,131 @@
-var request = require( 'request' ),
-	forever = require( 'request' ).forever(),
-	when = require( 'when' ),
-	_ = require( 'lodash' ),
-	Monologue = require( 'monologue.js' )( _ );
+var _ = require( 'lodash' ),
+	http = require( './http.js' );
 
-module.exports = function( hostName, address, version, port ) {
-
-	var Catalog = function() {
-			this.port = port || 8500;
-		this.version = version || 'v1';
-		this.base = 'http://localhost:' + this.port + '/' + this.version + '/catalog/';
-		this.services = {};
-		this.ids = [];
-		this.listIndex = 0;
-		this.serviceIndex = {};
+function deregister( dc, base, type, node, id ) {
+	var url = http.join( base, 'deregister' );
+	var doc = {
+		'Datacenter': dc,
+		'Node': node
 	};
+	if( type !== 'Node' ) {
+		doc[ type + 'ID' ] = [ id, node ].join( '@' );
+	}
+	return http.put( url, doc );
+}
 
-	Catalog.prototype.deregister = function( name ) {
-		var match = function( serviceId ) {
-				return serviceId == name;
-			},
-			id;
-		if( _.some( this.ids, match ) ) {
-			id = name;
-		} else {
-			id = name + '@' + hostName;
-		}
-		var url = this.base + 'service/deregister/' + id;
-		return when.promise( function( resolve, reject ) {
-			request.put( { url: url }, function( err ) {
-				if( err ) {
-					reject( err );
-				} else {
-					resolve();
-				}
-			} );
+function getNode( dc, base, name, wait ) {
+	var query = {
+			dc: dc, 
+			wait: wait
+		},
+		url = http.join( base, 'node/', name );
+	return http.blockingGet( url, query, 'nodes', name )
+		.then( function( doc ) {
+			return doc;
 		} );
-	};
+}
 
-	Catalog.prototype.listServices = function( wait ) {
-		var url = this.base + 'services';
-		if( wait ) {
-			url = url + '?wait=' + wait + '&index=' + this.listIndex;
-		}
-		return when.promise( function( resolve, reject, notify ) {
-			forever.get( {
-				url: url
-			}, 
-			function( err, resp ) {
-				if( err ) {
-					console.log( err );
-					reject( err );
-				} else {
-					var json = JSON.parse( resp.body ),
-						services = {};
-					this.listIndex = resp.headers[ 'x-consul-index' ];
-					if( _.keys( json ).length <= 1 ) {
-						resolve( false );
-					} else {
-						console.log( json );
-
-						_.each( _.omit( json, 'consul' ), function( tags, service ) {
-							var name = service,
-								tags = service.Tags,
-								obj = { name: name, tags: tags };
-							notify( 'catalog.service', obj );
-						}.bind( this ) );
-						resolve( true );
-					}
-				}
-			}.bind( this ) );
-		}.bind( this ) );
-	};
-
-	Catalog.prototype.lookupService = function( serviceName, wait ) {
-		var url = this.base + 'service/' + serviceName;
-		if( wait ) {
-			url = url + '?wait=' + wait + '&index=' + ( this.serviceIndex[ serviceName ] || 0 );
-		}
-		return when.promise( function( resolve, reject, notify ) {
-			forever.get( {
-				url: url
-			}, 
-			function( err, resp ) {
-				if( err ) {
-					console.log( err );
-					reject( err );
-				} else {
-					var json = JSON.parse( resp.body );
-					this.serviceIndex[ serviceName ] = resp.headers[ 'x-consul-index' ];
-					if( json.length == 0 ) {
-						resolve( false );
-					} else {
-						_.each( json, function( service ) {
-							var id = service.ServiceID,
-								name = service.ServiceName,
-								port = service.ServicePort,
-								tags = service.ServiceTags,
-								address = service.ServiceAddress,
-								machine = id.split( '@' )[ 1 ],
-								obj = { id: id, name: name, host: machine, address: address, port: port, tags: tags };
-							notify( obj );
-							if( this.services[ name ] ) {
-								this.services[ name ].push( obj );
-							} else {
-								this.services[ name ] = [ obj ];
-							}
-						}.bind( this ) );
-						resolve( true );
-					}
-				}
-			}.bind( this ) );
-		}.bind( this ) );
-	};
-
-	Catalog.prototype.register = function( name, port, tags ) {
-		var url = this.base + 'register',
-			body = {
-				Node: hostName,
-				Address: address,
-				Service: {
-					ID: name + '@' + hostName,
-					Service: name,
-					Tags: tags || [],
-					Port: port
-				}
-			};
-		return when.promise( function( resolve, reject ) {
-			request.put( {
-				url: url,
-				body: JSON.stringify( body )
-			}, 
-			function( err, resp ) {
-				if( err || resp.body != 'true\n' ) {
-					reject( err || resp.body );
-				} else {
-					resolve();
-				}
-			} );
+function getService( dc, base, name, tag, wait ) {
+	var query = {
+			dc: dc, 
+			wait: wait,
+			tag: tag 
+		},
+		url = http.join( base, 'service/', name );
+	return http.blockingGet( url, query, 'services', name )
+		.then( function( doc ) {
+			return _.map( doc, normalizeService );
 		} );
-	};
+}
 
-	return Catalog;
+function listDatacenters( base ) {
+	return http.get( http.join( base, 'datacenters' ) );
+}
+
+function listNodes( dc, base, wait ) {
+	var query = {
+			dc: dc, 
+			wait: wait
+		},
+		url = http.join( base, 'nodes/' );
+	return blockingGet( url, query, 'nodeList' );
+}
+
+function listServices( dc, base, wait ) {
+	var query = {
+			dc: dc,
+			wait: wait
+		},
+		url = http.join( base, 'services/' );
+	return http.blockingGet( url, query, 'serviceList' );
+}
+
+function registerCheck( dc, base, node, id, title, notes, service ) {
+	var url = http.join( base, 'register' );
+	return http.put( url, {
+		'Datacenter': dc,
+		'Check': {
+			'Node': node,
+			'CheckID': id,
+			'Name': title,
+			'Notes': notes,
+			'ServiceID': service
+		}
+	} );
+}
+
+function registerNode( dc, base, host, node ) {
+	var url = http.join( base, 'register' );
+	return http.put( url, {
+		'Datacenter': dc,
+		'Address': host,
+		'Node': node
+	} );
+}
+
+function registerService( dc, base, node, address, service, port, tags ) {
+	var url = http.join( base, 'register' );
+	return http.put( url, {
+		Datacenter: dc,
+		Node: node,
+		Address: address,
+		Service: {
+			ID: [ service, node ].join( '@' ),
+			Service: service,
+			Tags: tags || [],
+			Port: port
+		}
+	} );
+}
+
+function normalizeService( doc ) {
+	return {
+		Node: doc.Node,
+		Address: doc.Address,
+		Service: doc.ServiceName,
+		ID: doc.ServiceID,
+		Port: doc.ServicePort,
+		Tags: doc.ServiceTags,
+	};
+}
+
+module.exports = function( dc, hostName, node, address, version, port ) {
+	port = port || 8500;
+	version = version || 'v1';
+	hostName = hostName || 'localhost';
+	var base = http.join( 'http://', hostName, ':', port, '/', version, '/catalog/' );
+	
+	return { 
+		deregisterCheck: deregister.bind( undefined, dc, base, 'Check' ),
+		deregisterNode: deregister.bind( undefined, dc, base, 'Node' ),
+		deregisterService: deregister.bind( undefined, dc, base, 'Service' ),
+		getNode: getNode.bind( undefined, dc, base ),
+		getService: getService.bind( undefined, dc, base ),
+		listDatacenters: listDatacenters.bind( undefined, base ),
+		listNodes: listNodes.bind( undefined, base ),
+		listServices: listServices.bind( undefined, base ),
+		registerCheck: registerNode.bind( undefined, dc, base ),
+		registerNode: registerNode.bind( undefined, dc, base ),
+		registerService: registerService.bind( undefined, dc, base )
+	};
 };

@@ -1,8 +1,8 @@
 {
-  "name": "consul",
-  "version": "0.1.1",
-  "description": "An API wrapper for Consul's HTTP API",
-  "main": "src/api.js",
+  "name": "daedalus",
+  "version": "0.3.0",
+  "description": "Automatic resolution of service dependencies and configuration via consul",
+  "main": "src/index.js",
   "scripts": {
     "test": "gulp"
   },
@@ -20,14 +20,18 @@
   },
   "homepage": "https://github.com/arobson/node-consul",
   "devDependencies": {
-    "gulp": "^3.6.1",
-    "gulp-mocha": "^0.4.1",
-    "should": "^3.3.1"
+    "gulp": "~3.8.6",
+    "gulp-mocha": "~0.4.1",
+    "redis": "~0.11.0",
+    "riaktive": "~0.0.30",
+    "should": "~3.3.1",
+    "wascally": "~0.2.0-4"
   },
   "dependencies": {
-    "gulp": "^3.8.6",
-    "lodash": "^2.4.1",
-    "monologue.js": "^0.1.4",
+    "configya": "~0.0.6",
+    "fount": "~0.0.2",
+    "lodash": "~2.4.1",
+    "machina": "git://github.com/ifandelse/machina.js#c690cb39559a4086aca677770f95add44269a038",
     "request": "^2.34.0",
     "when": "^3.1.0"
   }

@@ -1,15 +1,15 @@
 var gulp = require( 'gulp' ),
 	mocha = require( 'gulp-mocha' );
 
-gulp.task( 'test', function() {
-	gulp.src( './spec/*.spec.js' )
+gulp.task( 'integration-test', function() {
+	gulp.src( './spec/integration/*.spec.js' )
 		.pipe( mocha( { reporter: 'spec' } ) )
 		.on( 'error', function( err ) { console.log( err.message, err.stack ); } );
 } );
 
 gulp.task( 'watch', function() {
-	gulp.watch( [ './src/**', './spec/**' ], [ 'test' ] );
+	gulp.watch( [ './src/**', './spec/**' ], [ 'integration-test' ] );
 } );
 
-gulp.task( 'default', [ 'test', 'watch' ], function() {
+gulp.task( 'integration', [ 'integration-test', 'watch' ], function() {
 } );

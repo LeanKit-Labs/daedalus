@@ -15,7 +15,7 @@ describe( 'when trying to get non-existent key', function() {
 	} );
 
 	it( 'should get nothing', function() {
-		should( result ).not.exist;
+		should( result ).not.exist; // jshint ignore:line
 	} );
 } );
 
@@ -40,8 +40,8 @@ describe( 'when putting a new value', function() {
 	} );
 
 	it( 'should set without error', function() {
-		result.should.be.true;
-		should( error ).not.exist;
+		result.should.be.true; // jshint ignore:line
+		should( error ).not.exist; // jshint ignore:line
 	} );
 } );
 
@@ -88,7 +88,7 @@ describe( 'when using check and set without correct index', function() {
 	} );
 
 	it( 'should fail', function() {
-		result.should.be.false;
+		result.should.be.false; // jshint ignore:line
 	} );
 } );
 
@@ -108,7 +108,7 @@ describe( 'when using check and set with correct index', function() {
 	} );
 
 	it( 'should succeed', function() {
-		result.should.be.true;
+		result.should.be.true; // jshint ignore:line
 	} );
 
 	after( function( done ) {

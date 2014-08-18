@@ -2,6 +2,7 @@ var _ = require( 'lodash' ),
 	req = require( 'request' ),
 	when = require( 'when' ),
 	whenNode = require( 'when/node'),
+	debug = require( 'debug' )( 'daedalus:http' ),
 	request = whenNode.liftAll( req );
 request.raw = req;
 
@@ -115,5 +116,4 @@ module.exports = {
 	get: get,
 	join: join,
 	put: put
-}
-
+};

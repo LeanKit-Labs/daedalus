@@ -5,6 +5,7 @@ var request = require( 'request' ),
 	machina = require( 'machina' )( _ ),
 	hostName = os.hostname(),
 	interfaces = os.networkInterfaces(),
+	debug = require( 'debug' )( 'daedalus:consul' ),
 	addresses = _.find( interfaces, function( interface, id ) { return /^[eE]([nN]|[tT][hH])[0-9]$/.test( id ); } );
 	address = _.where( addresses, { family: 'IPv4' } )[ 0 ].address;
 
@@ -31,7 +32,7 @@ function iterativeWait( iterate, predicate, limit ) {
 		.then( function( thing ) {
 			return thing;
 		} );
-}		
+}
 
 function getAny( catalog, serviceName, tag, wait, limit ) {
 	var iterate = waitForService( catalog, serviceName, tag, wait );
@@ -83,11 +84,11 @@ function setConfig( kv, serviceName, config ) {
 	return kv.set( serviceName, config );
 }
 
-module.exports = function( dc ) {
+module.exports = function( dc, agentHost, catalogHost ) {
 	var node = { name: hostName, address: address },
-		kv = require( './kv.js' )( dc, hostName ),
-		agent = require( './agent.js' )( dc, hostName ),
-		catalog = require( './catalog.js' )( dc, hostName, node.name, address ),
+		kv = require( './kv.js' )( dc, agentHost ),
+		agent = require( './agent.js' )( dc, agentHost ),
+		catalog = require( './catalog.js' )( dc, catalogHost, node.name, address ),
 		services = {},
 		servicePolls = {};
 
@@ -176,7 +177,7 @@ module.exports = function( dc ) {
 				target[ name ] = prop;
 			}
 		} );
-	};
+	}
 
 	map( proxy, machine );
 	return machine;

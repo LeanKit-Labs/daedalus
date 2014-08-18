@@ -1,5 +1,6 @@
-var api = require( './consul.js' )
+var api = require( './consul.js' );
 var config;
+var debug = require( 'debug' )( 'daedalus:main' );
 var _ = require( 'lodash' );
 var when = require( 'when' );
 var whenKeys = require( 'when/keys' );
@@ -8,11 +9,13 @@ function initialize( name, fount, opts ) {
 	fount = fount || require( 'fount' );
 	config = require( 'configya' )( {
 		CONSUL_DC: 'dc1',
-		SERVICE_NAME: name
+		SERVICE_NAME: name,
+		CONSUL_AGENT: 'localhost',
+		CONSUL_CATALOG: 'localhost'
 	} );
 	var dcName = config.consul.datacenter,
 		serviceName = config.service.name,
-		dc = api( dcName ),
+		dc = api( dcName, config.consul.agent, config.consul.catalog ),
 		configMap = {},
 		configKeyMap = {},
 		requiredKey = {},
@@ -29,7 +32,12 @@ function initialize( name, fount, opts ) {
 		lifeCycles[ dep ] = opt.lifecycle;
 		if( svc ) {
 			keys.push( 'service.' + dep );
-			serviceMap[ dep ] = when.any( [ dc.getLocal( svc ), dc.getAny( svc ) ] );
+			serviceMap[ dep ] = when.join( dc.getLocal( svc ), dc.getAny( svc ) )
+				.then( function( list ) {
+					var nodes = _.uniq( _.flatten( list ), function( x ) { return x.ID; } );
+					debug( 'Nodes found for %s: %s', dep, JSON.stringify( nodes ) );
+					return opt.all ? nodes : nodes[ 0 ];
+				} );
 		}
 		if( conf ) {
 			var key = [ serviceName, conf ].join( '-' );
@@ -63,10 +71,11 @@ function initialize( name, fount, opts ) {
 	var servicePromises = whenKeys.all( serviceMap )
 		.then( function( services ) {
 			_.each( services, function( service, name ) {
-				if( _.isEmpty( service[ 0 ] ) ) {
+				if( _.isEmpty( service ) ) {
 					throw new Error( 'service "' + name + '" could not be found.' );
 				} else {
-					fount( 'service' ).register( name, service[ 0 ] );
+					debug( 'Registering %s for %s', JSON.stringify( service ), name );
+					fount( 'service' ).register( name, service );
 				}
 			} );
 		} )

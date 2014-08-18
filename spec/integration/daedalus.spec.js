@@ -14,7 +14,8 @@ describe( 'when retrieving configuration', function() {
 			api.setConfig( 'test-rabbitmq', {} ),
 			api.agent.register( 'redis', 6379 ),
 			api.agent.register( 'rabbitmq', 5672 ),
-			api.catalog.registerService( 'ubuntu', 'ubuntu', 'riak', 8087 )
+			api.catalog.registerService( 'ubuntu', 'ubuntu', 'riak', 8087 ),
+			api.agent.register( 'riak', 8087 )
 		] )
 		.then( function() {
 			done();
@@ -26,7 +27,7 @@ describe( 'when retrieving configuration', function() {
 
 		before( function( done ) {
 			daedalus( {
-				riak: { service: 	'riak', 	config: 'riak',		module: process.cwd() + '/spec/integration/riak.js' },
+				riak: { service: 	'riak', 	config: 'riak',		module: process.cwd() + '/spec/integration/riak.js', all: true },
 				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: process.cwd() + '/spec/integration/rabbit.js' },
 				redis: { service: 	'redis', 	config: 'redis',	module: process.cwd() + '/spec/integration/redis.js' }
 			}, 'test' )
@@ -117,6 +118,7 @@ describe( 'when retrieving configuration', function() {
 			api.kv.del( 'test-rabbitmq' ),
 			api.agent.deregister( 'redis' ),
 			api.agent.deregister( 'rabbitmq' ),
+			api.agent.deregister( 'riak' ),
 			api.catalog.deregisterService( 'ubuntu', 'riak@' + api.node )
 		] ).then( function() {
 			done();

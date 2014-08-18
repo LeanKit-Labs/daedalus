@@ -102,6 +102,8 @@ The lifecycle property allows you to control how `fount` will resolve this modul
 ## Definition Examples
 As you will see in the example, the intended use of `daedalus` is a single call that takes your dependency definition object and returns a promise.
 
+	Note: by default, daedalus will only pass you the first service matching the name provided. To get all service instances, add the option 'all: true' to the service. (see how Riak is defined in the complete example)
+
 ### Service only
 ```javascript
 daedalus( {
@@ -168,7 +170,8 @@ daedalus( {
 	riak: { 
 		service: 'riak',
 		config: 'riak',
-		module: './riak.js'
+		module: './riak.js',
+		all: true
 	},
 	rabbit: { 
 		service: 'rabbitmq', 
@@ -233,15 +236,14 @@ module.exports = function( service, config ) {
 var riak = require( 'riaktive' );
 var _ = require( 'lodash' );
 
-module.exports = function( service, config ) {
-	// service is the information obtained from Consul: address and port
-	// config is the value (if any) obtained by the config|options key
-	var connection = {
-		server: service.Address,
-		pbc: service.Port }
-	};
-	config = _.merge( config, connection );
-	return riak( config );
+module.exports = function( services, config ) {
+	var connection = _.map( services, function( service ) {
+		return {
+			host: service.Address,
+			port: service.Port
+		};
+	} );
+	return riak.connect( connection );
 };
 ```
 

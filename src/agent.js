@@ -1,5 +1,6 @@
 var _ = require( 'lodash' ),
-	http = require( './http.js' );
+	http = require( './http.js' ),
+	debug = require( 'debug' )( 'daedalus:agent' );
 
 function deregisterCheck( base, checkId ) {
 	var url = http.join( base, 'check/deregister/', checkId );
@@ -90,7 +91,7 @@ module.exports = function( dc, hostName, version, port ) {
 	hostName = hostName || 'localhost';
 	var self = { address: undefined, name: undefined };
 	var base = http.join( 'http://', hostName, ':', port, '/', version, '/agent/' );
-
+	debug( 'Local agent url set to %s', base );
 	return {
 		address: self.address,
 		checks: {

@@ -1,6 +1,6 @@
 {
   "name": "daedalus",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Automatic resolution of service dependencies and configuration via consul",
   "main": "src/index.js",
   "scripts": {
@@ -23,13 +23,14 @@
     "gulp": "~3.8.6",
     "gulp-mocha": "~0.4.1",
     "redis": "~0.11.0",
-    "riaktive": "~0.0.30",
+    "riaktive": "~0.1.0",
     "should": "~3.3.1",
     "wascally": "~0.2.0-4"
   },
   "dependencies": {
     "configya": "~0.0.6",
-    "fount": "~0.0.2",
+    "debug": "^1.0.4",
+    "fount": "~0.0.5",
     "lodash": "~2.4.1",
     "machina": "git://github.com/ifandelse/machina.js#c690cb39559a4086aca677770f95add44269a038",
     "request": "^2.34.0",

@@ -1,9 +1,9 @@
-var _ = require( 'lodash' ),
-	req = require( 'request' ),
-	when = require( 'when' ),
-	whenNode = require( 'when/node'),
-	debug = require( 'debug' )( 'daedalus:http' ),
-	request = whenNode.liftAll( req );
+var _ = require( 'lodash' );
+var req = require( 'request' );
+var when = require( 'when' );
+var whenNode = require( 'when/node');
+var debug = require( 'debug' )( 'daedalus:http' );
+var request = whenNode.liftAll( req );
 request.raw = req;
 
 var indexCache = {

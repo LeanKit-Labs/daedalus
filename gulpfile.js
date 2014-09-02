@@ -1,5 +1,6 @@
 var gulp = require( 'gulp' ),
-	mocha = require( 'gulp-mocha' );
+	mocha = require( 'gulp-mocha' ),
+	process = require( 'processhost' )();
 
 gulp.task( 'integration-test', function() {
 	gulp.src( './spec/integration/*.spec.js' )
@@ -12,4 +13,5 @@ gulp.task( 'watch', function() {
 } );
 
 gulp.task( 'integration', [ 'integration-test', 'watch' ], function() {
+
 } );

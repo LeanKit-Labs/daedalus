@@ -1,16 +1,17 @@
-var request = require( 'request' ),
-	os = require( 'os' ),
-	when = require( 'when' ),
-	_ = require( 'lodash' ),
-	machina = require( 'machina' )( _ ),
-	hostName = os.hostname(),
-	interfaces = os.networkInterfaces(),
-	debug = require( 'debug' )( 'daedalus:consul' ),
-	addresses = _.find( interfaces, function( interface, id ) { return /^[eE]([nN]|[tT][hH])[0-9]$/.test( id ); } );
-	address = _.where( addresses, { family: 'IPv4' } )[ 0 ].address;
+var request = require( 'request' );
+var os = require( 'os' );
+var when = require( 'when' );
+var _ = require( 'lodash' );
+var machina = require( 'machina' )( _ );
+var hostName = os.hostname();
+var interfaces = os.networkInterfaces();
+var debug = require( 'debug' )( 'daedalus:consul' );
+var addresses = _.find( interfaces, function( interface, id ) { return /^[eE]([nN]|[tT][hH])[0-9]$/.test( id ); } );
+var address = _.where( addresses, { family: 'IPv4' } )[ 0 ].address;
 
 function waitForService( catalog, serviceName, tag, wait ) {
-	return function() { 
+	return function() {
+		debug( 'Wating for service %s in catalog', serviceName );
 		return catalog.getService( serviceName, tag, wait || '10ms' ); 
 	};
 }
@@ -64,15 +65,19 @@ function getLocal( catalog, agent, node, serviceName, tag, wait, limit ) {
 		agent.listServices()
 			.then( function( list ) {
 				if( !list[ serviceName ] ) {
+					debug( 'No service %s in agent list (get local)', serviceName );
 					iterativeWait( iterate, function( x ) { return x && x.length; } ,limit )
 						.then( function( matches ) {
 							resolve( _.where( matches, { 'Node': node } ) );
 						} );
 				} else {
+					debug( 'Found service %s locally in agent list', serviceName );
 					resolve( list[ serviceName ] );
 				}
 			} )
-			.then( null, reject );
+			.then( null, function( err ) {
+				debug( 'Error trying to find %s locally: %s', serviceName, err.stack );
+			} );
 	} ); 
 }
 
@@ -84,13 +89,13 @@ function setConfig( kv, serviceName, config ) {
 	return kv.set( serviceName, config );
 }
 
-module.exports = function( dc, agentHost, catalogHost ) {
-	var node = { name: hostName, address: address },
-		kv = require( './kv.js' )( dc, agentHost ),
-		agent = require( './agent.js' )( dc, agentHost ),
-		catalog = require( './catalog.js' )( dc, catalogHost, node.name, address ),
-		services = {},
-		servicePolls = {};
+module.exports = function( dc, agentHost, catalogHost, agentPort ) {
+	var node = { name: hostName, address: address };
+	var kv = require( './kv.js' )( dc, agentHost, agentPort );
+	var agent = require( './agent.js' )( dc, agentHost, agentPort );
+	var catalog = require( './catalog.js' )( dc, catalogHost, agentPort );
+	var services = {};
+	var servicePolls = {};
 
 	var proxy = {
 		agent: agent,
@@ -99,7 +104,6 @@ module.exports = function( dc, agentHost, catalogHost ) {
 		hostName: hostName,
 		address: node.address,
 		node: node.name,
-
 		checkAndSet: kv.cas,
 		deleteKey: kv.del,
 		getAny: getAny.bind( undefined, catalog ),
@@ -109,7 +113,7 @@ module.exports = function( dc, agentHost, catalogHost ) {
 		getLocal: function( serviceName, tag ) {
 			return getLocal( catalog, agent, node.name || hostName, serviceName, tag );
 		},
-		register: register.bind( undefined, agent, node.name || hostName, address ),
+		register: register.bind( undefined, agent ),
 		setConfig: setConfig.bind( undefined, kv ),
 		setKey: kv.set
 	};
@@ -118,9 +122,12 @@ module.exports = function( dc, agentHost, catalogHost ) {
 		_acquire: function() {
 			agent.getInfo()
 				.then( function( info ) {
-					node.name = info.Config.NodeName;
-					node.address = info.Config.AdvertiseAddr;
+					this.node = node.name = info.Config.NodeName;
+					this.address = node.address = info.Config.AdvertiseAddr;
 					this.transition( 'ready' );
+				}.bind( this ) )
+				.then( null, function( err ) {
+					this.handle( 'connection.failed', err );
 				}.bind( this ) );
 		},
 		operate: function( call, args ) {
@@ -136,13 +143,25 @@ module.exports = function( dc, agentHost, catalogHost ) {
 		states: {
 			waiting: {
 				_onEnter: function() {
+					this._wait = when.defer();
+					this.wait = this._wait.promise;
 					this._acquire();
 				},
 				operate: function( call ) {
 					this.deferUntilTransition( 'ready' );
+				},
+				'connection.failed': function( err ) {
+					debug( 'Cannot connect to local agent %s:%d. Error: %s', agentHost, agentPort, err.stack );
+					this.unavailable = true;
+					setTimeout( function() {
+						this._acquire();
+					}.bind( this ), 5000 );
 				}
 			},
 			ready: {
+				_onEnter: function() {
+					this._wait.resolve();
+				},
 				operate: function( call ) {
 					try {
 						var result = call.operation.apply( undefined, call.argList );

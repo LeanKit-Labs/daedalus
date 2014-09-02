@@ -1,6 +1,6 @@
-var _ = require( 'lodash' ),
-	http = require( './http.js' ),
-	debug = require( 'debug' )( 'daedalus:agent' );
+var _ = require( 'lodash' );
+var http = require( './http.js' );
+var debug = require( 'debug' )( 'daedalus:agent' );
 
 function deregisterCheck( base, checkId ) {
 	var url = http.join( base, 'check/deregister/', checkId );
@@ -85,8 +85,7 @@ function register( base, hostName, name, port, tags, check ) {
 	} );
 }
 
-module.exports = function( dc, hostName, version, port ) {
-	port = port || 8500;
+module.exports = function( dc, hostName, port, version ) {
 	version = version || 'v1';
 	hostName = hostName || 'localhost';
 	var self = { address: undefined, name: undefined };

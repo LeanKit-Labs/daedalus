@@ -1,12 +1,13 @@
 require( 'should' );
-var path = require( 'path' ),
-	_ = require( 'lodash' ),
-	api = require( '../../src/consul.js' )( 'dc1' ),
-	daedalus = require( '../../src/index.js' )( 'test' ),
-	when = require( 'when' );
+var path = require( 'path' );
+var _ = require( 'lodash' );
+var api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 'localhost', 8501 );
+var daedalus = require( '../../src/index.js' )( 'test', { dc: 'daedalus-spec', http: 8501 } );
+var when = require( 'when' );
+var duration = 3000;
 
 describe( 'when retrieving configuration', function() {
-	this.timeout( 10000 );
+	this.timeout( duration );
 	before( function( done ) {
 		when.all( [
 			api.setConfig( 'test-redis', {} ),
@@ -26,13 +27,17 @@ describe( 'when retrieving configuration', function() {
 		var fount;
 
 		before( function( done ) {
-			daedalus( {
-				riak: { service: 	'riak', 	config: 'riak',		module: process.cwd() + '/spec/integration/riak.js', all: true },
-				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: process.cwd() + '/spec/integration/rabbit.js' },
-				redis: { service: 	'redis', 	config: 'redis',	module: process.cwd() + '/spec/integration/redis.js' }
+			daedalus.initialize( {
+				riak: { service: 	'riak', 	config: 'riak',		module: '/spec/integration/riak.js', all: true },
+				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: '/spec/integration/rabbit.js' },
+				redis: { service: 	'redis', 	config: 'redis',	module: '/spec/integration/redis.js' }
 			}, 'test' )
 			.then( function( di ) {
 				fount = di;
+				done();
+			} )
+			.then( null, function( err ) {
+				console.log( err.stack );
 				done();
 			} );
 		} );
@@ -51,10 +56,10 @@ describe( 'when retrieving configuration', function() {
 		var err;
 
 		before( function( done ) {
-			daedalus( {
-				riak: { service: 	'durp', 	config: 'riak',		module: process.cwd() + '/spec/integration/riak.js' },
-				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: process.cwd() + '/spec/integration/rabbit.js' },
-				redis: { service: 	'redis', 	config: 'redis',	module: process.cwd() + '/spec/integration/redis.js' }
+			daedalus.initialize( {
+				riak: { service: 	'durp', 	config: 'riak',		module: '/spec/integration/riak.js' },
+				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: '/spec/integration/rabbit.js' },
+				redis: { service: 	'redis', 	config: 'redis',	module: '/spec/integration/redis.js' }
 			}, 'test' )
 			.then( undefined, function( e ) {
 				err = e.toString();
@@ -71,10 +76,10 @@ describe( 'when retrieving configuration', function() {
 		var err;
 
 		before( function( done ) {
-			daedalus( {
-				riak: { service: 	'riak', 	config: 'fAiL',		module: process.cwd() + '/spec/integration/riak.js' },
-				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: process.cwd() + '/spec/integration/rabbit.js' },
-				redis: { service: 	'redis', 	config: 'redis',	module: process.cwd() + '/spec/integration/redis.js' }
+			daedalus.initialize( {
+				riak: { service: 	'riak', 	config: 'fAiL',		module: '/spec/integration/riak.js' },
+				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: '/spec/integration/rabbit.js' },
+				redis: { service: 	'redis', 	config: 'redis',	module: '/spec/integration/redis.js' }
 			}, 'test' )
 			.then( undefined, function( e ) {
 				err = e.toString();
@@ -91,10 +96,10 @@ describe( 'when retrieving configuration', function() {
 		var fount;
 
 		before( function( done ) {
-			daedalus( {
-				riak: { service: 	'riak', 	options: 'fAiL',	module: process.cwd() + '/spec/integration/riak.js' },
-				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: process.cwd() + '/spec/integration/rabbit.js' },
-				redis: { service: 	'redis', 	config: 'redis',	module: process.cwd() + '/spec/integration/redis.js' }
+			daedalus.initialize( {
+				riak: { service: 	'riak', 	options: 'fAiL',	module: '/spec/integration/riak.js' },
+				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: '/spec/integration/rabbit.js' },
+				redis: { service: 	'redis', 	config: 'redis',	module: '/spec/integration/redis.js' }
 			}, 'test' )
 			.then( function( di ) {
 				fount = di;

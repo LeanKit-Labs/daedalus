@@ -1,34 +1,26 @@
 var api = require( './consul.js' );
-var config;
+var path = require( 'path' );
 var debug = require( 'debug' )( 'daedalus:main' );
 var _ = require( 'lodash' );
 var when = require( 'when' );
 var whenKeys = require( 'when/keys' );
+var config, dc, dcName, serviceName;
 
 function initialize( name, fount, opts ) {
 	fount = fount || require( 'fount' );
-	config = require( 'configya' )( {
-		CONSUL_DC: 'dc1',
-		SERVICE_NAME: name,
-		CONSUL_AGENT: 'localhost',
-		CONSUL_CATALOG: 'localhost'
-	} );
-	var dcName = config.consul.datacenter,
-		serviceName = config.service.name,
-		dc = api( dcName, config.consul.agent, config.consul.catalog ),
-		configMap = {},
-		configKeyMap = {},
-		requiredKey = {},
-		serviceMap = {},
-		modules = {},
-		lifeCycles = {};
+	var configMap = {};
+	var configKeyMap = {};
+	var requiredKey = {};
+	var serviceMap = {};
+	var modules = {};
+	var lifeCycles = {};
 
 	configMap[ serviceName ] = dc.getConfig( serviceName );
 
 	_.each( opts, function( opt, dep ) {
-		var conf = opt.config || opt.options,
-			svc = opt.service,
-			keys = [];
+		var conf = opt.config || opt.options;
+		var svc = opt.service;
+		var keys = [];
 		lifeCycles[ dep ] = opt.lifecycle;
 		if( svc ) {
 			keys.push( 'service.' + dep );
@@ -37,6 +29,9 @@ function initialize( name, fount, opts ) {
 					var nodes = _.uniq( _.flatten( list ), function( x ) { return x.ID; } );
 					debug( 'Nodes found for %s: %s', dep, JSON.stringify( nodes ) );
 					return opt.all ? nodes : nodes[ 0 ];
+				} )
+				.then( null, function( err ) {
+					debug( 'Failed to locate service %s', svc );
 				} );
 		}
 		if( conf ) {
@@ -57,7 +52,9 @@ function initialize( name, fount, opts ) {
 		.then( function( configuration ) {
 			_.each( configuration, function( config, name ) {
 				if( config !== undefined || !requiredKey[ name ] ) {
-					fount( 'config' ).register( name, config ? config.value : undefined );
+					var val = config ? config.value : undefined;
+					debug( 'Registering %s for %s', JSON.stringify( val ), name );
+					fount( 'config' ).register( name, val );
 				} else if( requiredKey[ name ] ){
 					throw new Error( 'config key "' + configKeyMap[ name ] + '" could not be found.' );
 				}
@@ -90,13 +87,28 @@ function initialize( name, fount, opts ) {
 		] )
 	.then( function() {
 		_.each( modules, function( opts, name ) {
-			var userModule = fount.inject( opts.dependencies, require( opts.module ) );
+			var userModule = fount.inject( opts.dependencies, require( path.join( process.cwd(), opts.module ) ) );
 			fount.register( name, userModule, lifeCycles[ name ] || 'static' );
 		} );
 		return fount;
 	} );
 }
 
-module.exports = function( name, fount ) {
-	return initialize.bind( undefined, name, fount );
+module.exports = function( name, cfg, fount ) {
+	cfg = cfg || {};
+	config = require( 'configya' )( {
+		CONSUL_DC: cfg.dc || 'dc1',
+		SERVICE_NAME: name,
+		CONSUL_AGENT: cfg.agent || 'localhost',
+		CONSUL_CATALOG: cfg.catalog || 'localhost',
+		CONSUL_HTTP: cfg.http || 8500
+	} );
+	dcName = config.consul.datacenter;
+	serviceName = config.service.name;
+	dc = api( dcName, config.consul.agent, config.consul.catalog, config.consul.http );
+
+	return {
+		initialize: initialize.bind( undefined, serviceName, fount ),
+		register: dc.register.bind( undefined, serviceName )
+	};
 };

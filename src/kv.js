@@ -1,5 +1,5 @@
-var _ = require( 'lodash' ),
-	http = require( './http.js' );
+var _ = require( 'lodash' );
+var http = require( './http.js' );
 
 function cas( dc, base, key, value ) {
 	var doc = strip( value ),
@@ -63,8 +63,7 @@ function strip( doc ) {
 	return _.omit( doc, '_consul' );
 }
 
-module.exports = function( dc, hostName, version, port ) {
-	port = port || 8500;
+module.exports = function( dc, hostName, port, version ) {
 	version = version || 'v1';
 	hostName = hostName || 'localhost';
 	var base = http.join( 'http://', hostName, ':', port, '/', version, '/kv/' );

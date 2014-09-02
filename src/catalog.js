@@ -1,5 +1,5 @@
-var _ = require( 'lodash' ),
-	http = require( './http.js' );
+var _ = require( 'lodash' );
+var http = require( './http.js' );
 
 function deregister( dc, base, type, node, id ) {
 	var url = http.join( base, 'deregister' );
@@ -109,8 +109,7 @@ function normalizeService( doc ) {
 	};
 }
 
-module.exports = function( dc, hostName, node, address, version, port ) {
-	port = port || 8500;
+module.exports = function( dc, hostName, port, version ) {
 	version = version || 'v1';
 	hostName = hostName || 'localhost';
 	var base = http.join( 'http://', hostName, ':', port, '/', version, '/catalog/' );

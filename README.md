@@ -16,8 +16,8 @@ If you're looking for a 1-to-1 Consul API lib, please see @silassewell's [Consul
 
 **Daedalus as the entry-point (recommended)
 ```javascript
-var daedalus = require( 'daedalus' )( 'myService' );
-daedalus( ... ) // depdency definition goes here
+var daedalus = require( 'daedalus' )( 'myService', [config] );
+daedalus.initialize( ... ) // depdency definition goes here
 	.then( function( fount ) {
 		// now you can pass fount off to your service's entry point
 		// or call fount.inject to inject dependencies directly
@@ -28,11 +28,26 @@ daedalus( ... ) // depdency definition goes here
 	} );
 ```
 
+The optional config hash allows you to provide custom values for the following properties:
+
+```javascript
+{
+	dc: 'dc1', // data center name, defaults to dc1,
+	agent: 'localhost', // the address of the local agent
+	catalog: 'localhost' // the address of the catalog API
+}
+```
+You can also control these values via the following environment variables:
+
+ * CONSUL_DC
+ * CONSUL_AGENT
+ * CONSUL_CATALOG
+
 **Daedalus after-the-fact (use when you already have your own fount instance)
 ```javascript
 var fount = require( 'fount' );
-var daedalus = require( 'daedalus' )( 'myService', fount ); // pass your fount instance at the end
-daedalus( ... ) // depdency definition goes here
+var daedalus = require( 'daedalus' )( 'myService', {}, fount ); // pass your fount instance at the end
+daedalus.initialize( ... ) // depdency definition goes here
 	.then( function( fount ) {
 		// now you can pass fount off to your service's entry point
 		// or call fount.inject to inject dependencies directly
@@ -54,6 +69,14 @@ As an example for the 3rd item:
  * Your service name is 'cache-service'
  * You've specified a config key in your dependency list named 'redis'
  * The key that will be searched for in Consul is not 'redis' but 'cache-service-redis'
+
+## Registration
+In many cases, you may want to have another mechanism providing registration of your service. If this is not the case, daedalus provides a register call that will register your service with the agent.
+
+```javascript
+// port, tags
+daedalus.register( 81208, [ 'tag1', 'tag2' ] );
+```
 
 ## Dependency Definitions
 `daedalus` expects a dependency definition object to tell it how to configure custom modules using service information and required or optional configuration stored in Consul. Each dependency should provide a module that takes the retrieved information and returns a configured object, promise or function that gets wired into fount.
@@ -106,7 +129,7 @@ As you will see in the example, the intended use of `daedalus` is a single call 
 
 ### Service only
 ```javascript
-daedalus( {
+daedalus.initialize( {
 	myService: {
 		service: 'serviceName',
 		module: './yourModule.js'
@@ -116,7 +139,7 @@ daedalus( {
 
 ### Config only
 ```javascript
-daedalus( {
+daedalus.initialize( {
 	myService: {
 		config: 'configKey',
 		module: './yourModule.js'
@@ -126,7 +149,7 @@ daedalus( {
 
 ### Service with config
 ```javascript
-daedalus( {
+daedalus.initialize( {
 	myService: {
 		service: 'serviceName',
 		config: 'configKey',
@@ -137,7 +160,7 @@ daedalus( {
 
 ### Service with optional config
 ```javascript
-daedalus( {
+daedalus.initialize( {
 	myService: {
 		service: 'serviceName',
 		options: 'configKey',
@@ -166,7 +189,7 @@ module.exports = function( rabbit, redis, riak ) {
 // main is a function with the signature function( rabbit, redis riak )
 var main = require( './main.js' );
 var daedalus = require( 'daedalus' )( 'myGreatService' ); // your service/app name is required'
-daedalus( {
+daedalus.initialize( {
 	riak: { 
 		service: 'riak',
 		config: 'riak',
@@ -281,12 +304,10 @@ If you see an area for improvement or want to add a feature, this section is for
 Once you've cloned from your fork, you should be able to run `npm install` and get all dependencies. This library uses gulp, gulp mocha, should, redis, riaktive and wascally.
 
 ### Consul setup
-The way I have this set up locally is one Consul node in bootstrap mode and one Consul in agent mode joined to it. The tests expect to talk to the agent node. Having a proper Consul cluster with a local agent should also work just fine.
-
-All tests assume dc1. If you'd like the tests to use a different DC, set the CONSUL_DC environment variable.
+Because the specs need a pristine datacenter to work in, you'll need to set up a data center using the scripts and config files provided in the ./consul directory. They use non-standard ports so that if you already have a local consul cluster working, this shouldn't interfere with it. It's a chore to set it up, but as soon as I started working on other projects using a normal dev cluster, it broke the specs.
 
 ### Tests
-Right now I only have integration tests. You can run these with `gulp integration`. Eventually I hope to provide some unit test coverage to specific modules so that over time it's easier to work on w/o having to have Consul up the entire time.
+Right now I only have integration tests. You can run these with `gulp integration`. Eventually I hope to provide some unit test coverage to specific modules so that over time it's easier to work on w/o having to have the specific Consul setup.
 
 Even with unit tests, PRs that fail the integration tests will not be merged.
 

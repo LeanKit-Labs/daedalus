@@ -1,10 +1,10 @@
 require( 'should' );
 var path = require( 'path' ),
 	_ = require( 'lodash' ),
-	api = require( '../../src/consul.js' )( 'dc1' ),
+	api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 'localhost', 8501 ),
 	os = require( 'os' ),
 	pipeline = require( 'when/pipeline' ),
-	machineName = os.hostname();
+	nodeName = 'daedalus1';
 
 describe( 'when getting a list of services without any', function() {
 	var result;
@@ -39,11 +39,11 @@ describe( 'when getting a list of services', function() {
 	} );
 
 	it( 'should get test service', function() {
-		var key = 'test-service@' + machineName,
+		var key = 'test-service@' + nodeName,
 			expected = {};
 		expected[ key ] = {
 			Address: api.address,
-			ID: 'test-service@' + machineName,
+			ID: 'test-service@' + nodeName,
 			Service: 'test-service',
 			Port: 1000,
 			Tags: [ 'test', 'registration' ]

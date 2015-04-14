@@ -24,12 +24,13 @@
     "gulp-mocha": "~0.4.1",
     "processhost": "^0.1.13",
     "redis": "~0.11.0",
-    "riaktive": "~0.1.0",
+    "riaktive": "~0.1.0-10",
     "should": "~3.3.1",
-    "wascally": "~0.2.0-4"
+    "wascally": "~0.2.4"
   },
   "dependencies": {
     "configya": "~0.0.6",
+    "consul": "^0.14.0",
     "debug": "^1.0.4",
     "fount": "~0.0.5",
     "lodash": "~2.4.1",

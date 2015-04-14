@@ -18,9 +18,9 @@ describe( 'when retrieving configuration', function() {
 			api.catalog.registerService( 'ubuntu', 'ubuntu', 'riak', 8087 ),
 			api.agent.register( 'riak', 8087 )
 		] )
-		.then( function() {
-			done();
-		} );
+			.then( function() {
+				done();
+			} );
 	} );
 
 	describe( 'with valid daedalus initialization', function() {
@@ -28,18 +28,18 @@ describe( 'when retrieving configuration', function() {
 
 		before( function( done ) {
 			daedalus.initialize( {
-				riak: { service: 	'riak', 	config: 'riak',		module: '/spec/integration/riak.js', all: true },
-				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: '/spec/integration/rabbit.js' },
-				redis: { service: 	'redis', 	config: 'redis',	module: '/spec/integration/redis.js' }
+				riak: { service: 'riak', config: 'riak', module: './spec/integration/riak.js', all: true },
+				rabbit: { service: 'rabbitmq', config: 'rabbitmq', module: './spec/integration/rabbit.js' },
+				redis: { service: 'redis', config: 'redis', module: './spec/integration/redis.js' }
 			}, 'test' )
-			.then( function( di ) {
-				fount = di;
-				done();
-			} )
-			.then( null, function( err ) {
-				console.log( err.stack );
-				done();
-			} );
+				.then( function( di ) {
+					fount = di;
+					done();
+				} )
+				.then( null, function( err ) {
+					console.log( err.stack );
+					done();
+				} );
 		} );
 
 		it( 'should configure and register redis', function( done ) {
@@ -57,14 +57,14 @@ describe( 'when retrieving configuration', function() {
 
 		before( function( done ) {
 			daedalus.initialize( {
-				riak: { service: 	'durp', 	config: 'riak',		module: '/spec/integration/riak.js' },
-				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: '/spec/integration/rabbit.js' },
-				redis: { service: 	'redis', 	config: 'redis',	module: '/spec/integration/redis.js' }
+				riak: { service: 'durp', config: 'riak', module: './spec/integration/riak.js' },
+				rabbit: { service: 'rabbitmq', config: 'rabbitmq', module: './spec/integration/rabbit.js' },
+				redis: { service: 'redis', config: 'redis', module: './spec/integration/redis.js' }
 			}, 'test' )
-			.then( undefined, function( e ) {
-				err = e.toString();
-				done();
-			} );
+				.then( undefined, function( e ) {
+					err = e.toString();
+					done();
+				} );
 		} );
 
 		it( 'should fail with clear error', function() {
@@ -77,14 +77,14 @@ describe( 'when retrieving configuration', function() {
 
 		before( function( done ) {
 			daedalus.initialize( {
-				riak: { service: 	'riak', 	config: 'fAiL',		module: '/spec/integration/riak.js' },
-				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: '/spec/integration/rabbit.js' },
-				redis: { service: 	'redis', 	config: 'redis',	module: '/spec/integration/redis.js' }
+				riak: { service: 'riak', config: 'fAiL', module: './spec/integration/riak.js' },
+				rabbit: { service: 'rabbitmq', config: 'rabbitmq', module: './spec/integration/rabbit.js' },
+				redis: { service: 'redis', config: 'redis', module: './spec/integration/redis.js' }
 			}, 'test' )
-			.then( undefined, function( e ) {
-				err = e.toString();
-				done();
-			} );
+				.then( undefined, function( e ) {
+					err = e.toString();
+					done();
+				} );
 		} );
 
 		it( 'should fail with clear error', function() {
@@ -97,14 +97,14 @@ describe( 'when retrieving configuration', function() {
 
 		before( function( done ) {
 			daedalus.initialize( {
-				riak: { service: 	'riak', 	options: 'fAiL',	module: '/spec/integration/riak.js' },
-				rabbit: { service: 	'rabbitmq', config: 'rabbitmq',	module: '/spec/integration/rabbit.js' },
-				redis: { service: 	'redis', 	config: 'redis',	module: '/spec/integration/redis.js' }
+				riak: { service: 'riak', options: 'fAiL', module: './spec/integration/riak.js', all: true },
+				rabbit: { service: 'rabbitmq', config: 'rabbitmq', module: './spec/integration/rabbit.js' },
+				redis: { service: 'redis', config: 'redis', module: './spec/integration/redis.js' }
 			}, 'test' )
-			.then( function( di ) {
-				fount = di;
-				done();
-			} );
+				.then( function( di ) {
+					fount = di;
+					done();
+				} );
 		} );
 
 		it( 'should configure and register redis', function( done ) {

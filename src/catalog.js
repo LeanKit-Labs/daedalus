@@ -1,13 +1,17 @@
 var _ = require( 'lodash' );
 var http = require( './http.js' );
 
+function normalizeResult( result ) {
+	return result[ 0 ];
+}
+
 function deregister( dc, base, type, node, id ) {
 	var url = http.join( base, 'deregister' );
 	var doc = {
 		'Datacenter': dc,
 		'Node': node
 	};
-	if( type !== 'Node' ) {
+	if ( type !== 'Node' ) {
 		doc[ type + 'ID' ] = [ id, node ].join( '@' );
 	}
 	return http.put( url, doc );
@@ -15,7 +19,7 @@ function deregister( dc, base, type, node, id ) {
 
 function getNode( dc, base, name, wait ) {
 	var query = {
-			dc: dc, 
+			dc: dc,
 			wait: wait
 		},
 		url = http.join( base, 'node/', name );
@@ -27,9 +31,9 @@ function getNode( dc, base, name, wait ) {
 
 function getService( dc, base, name, tag, wait ) {
 	var query = {
-			dc: dc, 
+			dc: dc,
 			wait: wait,
-			tag: tag 
+			tag: tag
 		},
 		url = http.join( base, 'service/', name );
 	return http.blockingGet( url, query, 'services', name )
@@ -38,13 +42,13 @@ function getService( dc, base, name, tag, wait ) {
 		} );
 }
 
-function listDatacenters( base ) {
-	return http.get( http.join( base, 'datacenters' ) );
+function listDatacenters( catalog ) {
+	return catalog.datacenters().then( normalizeResult );
 }
 
 function listNodes( dc, base, wait ) {
 	var query = {
-			dc: dc, 
+			dc: dc,
 			wait: wait
 		},
 		url = http.join( base, 'nodes/' );
@@ -109,12 +113,14 @@ function normalizeService( doc ) {
 	};
 }
 
-module.exports = function( dc, hostName, port, version ) {
+module.exports = function( dc, client, hostName, port, version ) {
+	var catalog = client.catalog;
+
 	version = version || 'v1';
 	hostName = hostName || 'localhost';
 	var base = http.join( 'http://', hostName, ':', port, '/', version, '/catalog/' );
-	
-	return { 
+
+	return {
 		deregisterCheck: deregister.bind( undefined, dc, base, 'Check' ),
 		deregisterNode: deregister.bind( undefined, dc, base, 'Node' ),
 		deregisterService: deregister.bind( undefined, dc, base, 'Service' ),

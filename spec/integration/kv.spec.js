@@ -5,7 +5,7 @@ var path = require( 'path' ),
 
 describe( 'when trying to get non-existent key', function() {
 	var result;
-	
+
 	before( function( done ) {
 		api.kv.get( 'beef-its-whats-for-dinner' )
 			.then( function( value ) {
@@ -29,14 +29,14 @@ describe( 'when putting a new value', function() {
 			c: [ 3, 4, 5 ],
 			d: { e: 6 }
 		} )
-		.then( function( resp ) {
-			result = resp;
-			done();
-		} )
-		.then( null, function( err ) {
-			error = err;
-			done();
-		} );
+			.then( function( resp ) {
+				result = resp;
+				done();
+			} )
+			.then( null, function( err ) {
+				error = err;
+				done();
+			} );
 	} );
 
 	it( 'should set without error', function() {
@@ -55,10 +55,13 @@ describe( 'when getting an existing value', function() {
 		result;
 
 	before( function( done ) {
-		api.kv.get( 'test-key-1' )
-			.then( function( doc ) {
-				result = doc;
-				done();
+		api.kv.set( 'test-key-2', expected )
+			.then( function() {
+				api.kv.get( 'test-key-2' )
+					.then( function( doc ) {
+						result = doc;
+						done();
+					} );
 			} );
 	} );
 
@@ -81,10 +84,10 @@ describe( 'when using check and set without correct index', function() {
 			c: [ 3, 4, 5 ],
 			d: { e: 6 }
 		} )
-		.then( function( resp ) {
-			result = resp;
-			done();
-		} ); 
+			.then( function( resp ) {
+				result = resp;
+				done();
+			} );
 	} );
 
 	it( 'should fail', function() {

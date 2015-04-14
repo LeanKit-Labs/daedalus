@@ -24,7 +24,7 @@ describe( 'when getting a list of services without any', function() {
 
 describe( 'when getting a list of services', function() {
 	var list;
-	
+
 	before( function( done ) {
 		var getList = function() {
 			api.agent.listServices()
@@ -32,7 +32,7 @@ describe( 'when getting a list of services', function() {
 					list = result;
 					done();
 				} );
-			};
+		};
 
 		api.agent.register( 'test-service', 1000, [ 'test', 'registration' ] )
 			.then( getList );
@@ -48,6 +48,7 @@ describe( 'when getting a list of services', function() {
 			Port: 1000,
 			Tags: [ 'test', 'registration' ]
 		};
+
 		list.should.eql( expected );
 	} );
 

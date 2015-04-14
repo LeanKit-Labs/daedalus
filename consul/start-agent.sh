@@ -1,1 +1,1 @@
-consul agent -config-file ./consul/agent.json
+consul agent -config-file ./agent.json

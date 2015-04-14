@@ -1,1 +1,1 @@
-./consul agent -config-file ./server.json -server -bind=0.0.0.0 -bootstrap
+consul agent -config-file ./server.json -server -bind=0.0.0.0 -bootstrap

@@ -4,7 +4,7 @@ var path = require( 'path' ),
 	api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 'localhost', 8501 ),
 	os = require( 'os' ),
 	pipeline = require( 'when/pipeline' ),
-	nodeName = 'daedalus1';
+	nodeName = 'consul-agent1';
 
 describe( 'when getting a list of services without any', function() {
 	var result;

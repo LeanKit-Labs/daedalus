@@ -1,5 +1,24 @@
 var _ = require( 'lodash' );
 var http = require( './http.js' );
+var DEFAULT_TIMEOUT = 60000;
+
+var indexCache = {
+	serviceList: 0,
+	services: {},
+	nodeList: 0,
+	nodes: {}
+};
+
+function storeIndex( response, type, id ) {
+	var index = response.headers[ 'x-consul-index' ];
+	if ( index ) {
+		if ( id ) {
+			indexCache[ type ][ id ] = index;
+		} else {
+			indexCache[ type ] = index;
+		}
+	}
+}
 
 function normalizeResult( result ) {
 	return result[ 0 ];
@@ -17,27 +36,46 @@ function deregister( dc, base, type, node, id ) {
 	return http.put( url, doc );
 }
 
-function getNode( dc, base, name, wait ) {
+function getNode( dc, catalog, name, wait ) {
 	var query = {
-			dc: dc,
-			wait: wait
-		},
-		url = http.join( base, 'node/', name );
-	return http.blockingGet( url, query, 'nodes', name )
-		.then( function( doc ) {
+		node: name,
+		dc: dc,
+		wait: wait,
+		timeout: DEFAULT_TIMEOUT
+	};
+
+	if ( wait && indexCache.nodes[ name ] ) {
+		query.index = indexCache.nodes[ name ];
+	}
+
+	return catalog.node.services( query )
+		.then( function( result ) {
+			var doc = result[ 0 ];
+			var response = result[ 1 ];
+			storeIndex( response, 'nodes', name );
 			return doc;
 		} );
 }
 
-function getService( dc, base, name, tag, wait ) {
+function getService( dc, catalog, name, tag, wait ) {
+
 	var query = {
-			dc: dc,
-			wait: wait,
-			tag: tag
-		},
-		url = http.join( base, 'service/', name );
-	return http.blockingGet( url, query, 'services', name )
-		.then( function( doc ) {
+		service: name,
+		dc: dc,
+		wait: wait,
+		tag: tag,
+		timeout: DEFAULT_TIMEOUT
+	};
+
+	if ( wait && indexCache.services[ name ] ) {
+		query.index = indexCache.services[ name ];
+	}
+
+	return catalog.service.nodes( query )
+		.then( function( result ) {
+			var doc = result[ 0 ];
+			var response = result[ 1 ];
+			storeIndex( response, 'services', name );
 			return _.map( doc, normalizeService );
 		} );
 }
@@ -46,22 +84,44 @@ function listDatacenters( catalog ) {
 	return catalog.datacenters().then( normalizeResult );
 }
 
-function listNodes( dc, base, wait ) {
+function listNodes( dc, catalog, wait ) {
 	var query = {
-			dc: dc,
-			wait: wait
-		},
-		url = http.join( base, 'nodes/' );
-	return blockingGet( url, query, 'nodeList' );
+		dc: dc,
+		wait: wait,
+		timeout: DEFAULT_TIMEOUT
+	};
+
+	if ( wait && indexCache.nodeList ) {
+		query.index = indexCache.nodeList;
+	}
+
+	return catalog.nodes.list( query )
+		.then( function( result ) {
+			var list = result[ 0 ];
+			var response = result[ 1 ];
+			storeIndex( response, 'nodeList' );
+			return list;
+		} );
 }
 
-function listServices( dc, base, wait ) {
+function listServices( dc, catalog, wait ) {
 	var query = {
-			dc: dc,
-			wait: wait
-		},
-		url = http.join( base, 'services/' );
-	return http.blockingGet( url, query, 'serviceList' );
+		dc: dc,
+		wait: wait,
+		timeout: DEFAULT_TIMEOUT
+	};
+
+	if ( wait && indexCache.serviceList ) {
+		query.index = indexCache.serviceList;
+	}
+
+	return catalog.services.list( query )
+		.then( function( result ) {
+			var list = result[ 0 ];
+			var response = result[ 1 ];
+			storeIndex( response, 'serviceList' );
+			return list;
+		} );
 }
 
 function registerCheck( dc, base, node, id, title, notes, service ) {
@@ -124,11 +184,11 @@ module.exports = function( dc, client, hostName, port, version ) {
 		deregisterCheck: deregister.bind( undefined, dc, base, 'Check' ),
 		deregisterNode: deregister.bind( undefined, dc, base, 'Node' ),
 		deregisterService: deregister.bind( undefined, dc, base, 'Service' ),
-		getNode: getNode.bind( undefined, dc, base ),
-		getService: getService.bind( undefined, dc, base ),
+		getNode: getNode.bind( undefined, dc, catalog ),
+		getService: getService.bind( undefined, dc, catalog ),
 		listDatacenters: listDatacenters.bind( undefined, base ),
-		listNodes: listNodes.bind( undefined, base ),
-		listServices: listServices.bind( undefined, base ),
+		listNodes: listNodes.bind( undefined, dc, catalog ),
+		listServices: listServices.bind( undefined, dc, catalog ),
 		registerCheck: registerNode.bind( undefined, dc, base ),
 		registerNode: registerNode.bind( undefined, dc, base ),
 		registerService: registerService.bind( undefined, dc, base )

@@ -1,9 +1,5 @@
 require( 'should' );
-var path = require( 'path' ),
-	_ = require( 'lodash' ),
-	api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 'localhost', 8501 ),
-	os = require( 'os' ),
-	machineName = os.hostname();
+var api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 'localhost', 8501 );
 
 describe( 'when registering service with catalog', function() {
 	var service;
@@ -22,12 +18,12 @@ describe( 'when registering service with catalog', function() {
 	it( 'should get test service', function() {
 		service.should.eql( {
 			Node: api.node,
-    		Address: api.address,
-    		ID: 'test-cat-service@' + api.node,
-    		Service: 'test-cat-service',
-    		Tags: [],
-    		Port: 4444 } );
-		} );
+			Address: api.address,
+			ID: 'test-cat-service@' + api.node,
+			Service: 'test-cat-service',
+			Tags: [],
+		Port: 4444 } );
+	} );
 
 	after( function( done ) {
 		api.catalog.deregisterService( api.node, 'test-cat-service' )

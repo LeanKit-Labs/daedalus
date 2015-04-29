@@ -95,7 +95,7 @@ function listNodes( dc, catalog, wait ) {
 		query.index = indexCache.nodeList;
 	}
 
-	return catalog.nodes.list( query )
+	return catalog.node.list( query )
 		.then( function( result ) {
 			var list = result[ 0 ];
 			var response = result[ 1 ];
@@ -115,7 +115,7 @@ function listServices( dc, catalog, wait ) {
 		query.index = indexCache.serviceList;
 	}
 
-	return catalog.services.list( query )
+	return catalog.service.list( query )
 		.then( function( result ) {
 			var list = result[ 0 ];
 			var response = result[ 1 ];
@@ -186,7 +186,7 @@ module.exports = function( dc, client, hostName, port, version ) {
 		deregisterService: deregister.bind( undefined, dc, base, 'Service' ),
 		getNode: getNode.bind( undefined, dc, catalog ),
 		getService: getService.bind( undefined, dc, catalog ),
-		listDatacenters: listDatacenters.bind( undefined, base ),
+		listDatacenters: listDatacenters.bind( undefined, catalog ),
 		listNodes: listNodes.bind( undefined, dc, catalog ),
 		listServices: listServices.bind( undefined, dc, catalog ),
 		registerCheck: registerNode.bind( undefined, dc, base ),

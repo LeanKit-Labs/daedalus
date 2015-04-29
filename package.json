@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/arobson/node-consul",
   "devDependencies": {
+    "biggulp": "0.0.4",
     "gulp": "~3.8.6",
     "gulp-mocha": "~0.4.1",
     "processhost": "^0.1.13",

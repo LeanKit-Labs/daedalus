@@ -1,5 +1,4 @@
 var _ = require( 'lodash' );
-var http = require( './http.js' );
 var DEFAULT_TIMEOUT = 60000;
 
 var indexCache = {
@@ -22,18 +21,6 @@ function storeIndex( response, type, id ) {
 
 function normalizeResult( result ) {
 	return result[ 0 ];
-}
-
-function deregister( dc, base, type, node, id ) {
-	var url = http.join( base, 'deregister' );
-	var doc = {
-		'Datacenter': dc,
-		'Node': node
-	};
-	if ( type !== 'Node' ) {
-		doc[ type + 'ID' ] = [ id, node ].join( '@' );
-	}
-	return http.put( url, doc );
 }
 
 function getNode( dc, catalog, name, wait ) {
@@ -124,44 +111,6 @@ function listServices( dc, catalog, wait ) {
 		} );
 }
 
-function registerCheck( dc, base, node, id, title, notes, service ) {
-	var url = http.join( base, 'register' );
-	return http.put( url, {
-		'Datacenter': dc,
-		'Check': {
-			'Node': node,
-			'CheckID': id,
-			'Name': title,
-			'Notes': notes,
-			'ServiceID': service
-		}
-	} );
-}
-
-function registerNode( dc, base, host, node ) {
-	var url = http.join( base, 'register' );
-	return http.put( url, {
-		'Datacenter': dc,
-		'Address': host,
-		'Node': node
-	} );
-}
-
-function registerService( dc, base, node, address, service, port, tags ) {
-	var url = http.join( base, 'register' );
-	return http.put( url, {
-		Datacenter: dc,
-		Node: node,
-		Address: address,
-		Service: {
-			ID: [ service, node ].join( '@' ),
-			Service: service,
-			Tags: tags || [],
-			Port: port
-		}
-	} );
-}
-
 function normalizeService( doc ) {
 	return {
 		Node: doc.Node,
@@ -178,19 +127,12 @@ module.exports = function( dc, client, hostName, port, version ) {
 
 	version = version || 'v1';
 	hostName = hostName || 'localhost';
-	var base = http.join( 'http://', hostName, ':', port, '/', version, '/catalog/' );
 
 	return {
-		deregisterCheck: deregister.bind( undefined, dc, base, 'Check' ),
-		deregisterNode: deregister.bind( undefined, dc, base, 'Node' ),
-		deregisterService: deregister.bind( undefined, dc, base, 'Service' ),
 		getNode: getNode.bind( undefined, dc, catalog ),
 		getService: getService.bind( undefined, dc, catalog ),
 		listDatacenters: listDatacenters.bind( undefined, catalog ),
 		listNodes: listNodes.bind( undefined, dc, catalog ),
 		listServices: listServices.bind( undefined, dc, catalog ),
-		registerCheck: registerNode.bind( undefined, dc, base ),
-		registerNode: registerNode.bind( undefined, dc, base ),
-		registerService: registerService.bind( undefined, dc, base )
 	};
 };

@@ -85,13 +85,15 @@ function leaveNode( agent, nodeUrl ) {
 }
 
 function register( agent, hostName, name, port, tags, check ) {
-	return agent.service.register( {
+	var props = {
 		id: [ name, hostName ].join( '@' ),
 		name: name,
 		tags: tags,
 		port: port,
 		check: check
-	} );
+	};
+
+	return agent.service.register( props );
 }
 
 module.exports = function( dc, client, hostName ) {

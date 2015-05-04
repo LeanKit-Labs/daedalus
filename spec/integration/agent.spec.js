@@ -1,7 +1,7 @@
 var should = require( 'should' ),
 	path = require( 'path' ),
 	_ = require( 'lodash' ),
-	api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 'localhost', 8501 ),
+	api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 8501 ),
 	os = require( 'os' ),
 	pipeline = require( 'when/pipeline' ),
 	nodeName = 'consul-agent1',

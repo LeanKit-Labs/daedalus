@@ -1,7 +1,7 @@
 require( 'should' );
 var path = require( 'path' );
 var _ = require( 'lodash' );
-var api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 'localhost', 8501 );
+var api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 8501 );
 var daedalus = require( '../../src/index.js' )( 'test', { dc: 'daedalus-spec', http: 8501 } );
 var when = require( 'when' );
 var duration = 3000;
@@ -15,7 +15,6 @@ describe( 'when retrieving configuration', function() {
 			api.setConfig( 'test-rabbitmq', {} ),
 			api.agent.register( 'redis', 6379 ),
 			api.agent.register( 'rabbitmq', 5672 ),
-			api.catalog.registerService( 'ubuntu', 'ubuntu', 'riak', 8087 ),
 			api.agent.register( 'riak', 8087 )
 		] )
 			.then( function() {
@@ -123,8 +122,7 @@ describe( 'when retrieving configuration', function() {
 			api.kv.del( 'test-rabbitmq' ),
 			api.agent.deregister( 'redis' ),
 			api.agent.deregister( 'rabbitmq' ),
-			api.agent.deregister( 'riak' ),
-			api.catalog.deregisterService( 'ubuntu', 'riak@' + api.node )
+			api.agent.deregister( 'riak' )
 		] ).then( function() {
 			done();
 		} );

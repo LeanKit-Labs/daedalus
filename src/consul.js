@@ -145,7 +145,7 @@ function getConsulClient( options ) {
 	return client;
 }
 
-module.exports = function( dc, agentHost, catalogHost, agentPort ) {
+module.exports = function( dc, agentHost, agentPort ) {
 
 	var agentClient;
 	var catalogClient;
@@ -156,13 +156,11 @@ module.exports = function( dc, agentHost, catalogHost, agentPort ) {
 	};
 
 	agentClient = getConsulClient( agentClientConfig );
-	catalogClient = agentHost === catalogHost ? agentClient : getConsulClient( { host: catalogHost, port: agentPort } );
-
 
 	var node = { name: hostName, address: address };
 	var kv = require( './kv.js' )( dc, agentClient );
 	var agent = require( './agent.js' )( dc, agentClient, agentHost, agentPort );
-	var catalog = require( './catalog.js' )( dc, catalogClient, catalogHost, agentPort );
+	var catalog = require( './catalog.js' )( dc, agentClient, agentHost, agentPort );
 	var services = {};
 	var servicePolls = {};
 

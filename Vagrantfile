@@ -9,22 +9,22 @@ Vagrant.configure(2) do |config|
     v.vmx["numvcpus"] = "1"
   end
 
-  config.vm.provision "shell", inline: <<-SHELL
-     sudo apt-get update
-     sudo apt-get upgrade -y
-  SHELL
+  #config.vm.provision "shell", inline: <<-SHELL
+  #   sudo apt-get update
+  #   sudo apt-get upgrade -y
+  #SHELL
 
   config.vm.provision :docker do |d|
-  	d.pull_images "progrium/consul"
+  	#d.pull_images "progrium/consul"
   	d.run "consul-server1",
   		image: "progrium/consul",
-  		cmd: "-server -bootstrap -dc daedalus-spec",
-  		args: "-h consul-server1 --restart=always"
+  		cmd: "-config-file /etc/.consul/server.json",
+  		args: "-h consul-server1.leankit.com --restart=always -v /vagrant/.consul:/etc/.consul"
 
   	d.run "consul-agent1",
   		image: "progrium/consul",
-  		cmd: "-join server1 -dc daedalus-spec",
-  		args: "-h consul-agent1 --restart=always --link consul-server1:server1 -p 8400:8400 -p 8500:8500 -p 8600:53/udp"
+  		cmd: "-config-file /etc/.consul/agent.json -join server1",
+  		args: "-h consul-agent1.leankit.com --restart=always --link consul-server1:server1 -p 8400:8400 -p 8500:8500 -p 443:443 -p 8499:8499 -p 8600:53/udp -v /vagrant/.consul:/etc/.consul"
   end
 
   config.vm.provision "shell", run: "always", inline: <<-SHELL
@@ -37,6 +37,7 @@ Vagrant.configure(2) do |config|
   # accessing "localhost:8080" will access port 80 on the guest machine.
   config.vm.network "forwarded_port", guest: 8400, host: 8401
   config.vm.network "forwarded_port", guest: 8500, host: 8501
+  config.vm.network "forwarded_port", guest: 443, host: 443
   config.vm.network "forwarded_port", guest: 53, host: 8601
 
   # Create a private network, which allows host-only access to the machine

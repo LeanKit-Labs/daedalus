@@ -1,0 +1,11 @@
+{
+	"server": true,
+	"bootstrap": true,
+	"datacenter": "daedalus-spec",
+	"encrypt": "ONLqkgLoWaiYfykTLd7Tuw==",
+	"verify_outgoing": true,
+	"verify_incoming": true,
+	"ca_file": "/etc/.consul/root.cer",
+	"cert_file": "/etc/.consul/consul-server1.leankit.com/consul-server1.leankit.com.cer",
+	"key_file": "/etc/.consul/consul-server1.leankit.com/consul-server1.leankit.com.key"
+}

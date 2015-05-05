@@ -1,11 +1,8 @@
-var should = require( 'should' ),
-	path = require( 'path' ),
+require( 'should' );
+var consulCfg = require( './consul.config.js' )(),
+	nodeName = consulCfg.host,
 	_ = require( 'lodash' ),
-	api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 8501 ),
-	os = require( 'os' ),
-	pipeline = require( 'when/pipeline' ),
-	nodeName = 'consul-agent1',
-	when = require( 'when' );
+	api = require( '../../src/consul.js' )( 'daedalus-spec', consulCfg );
 
 describe( 'when getting a list of services without any', function() {
 	var result;
@@ -63,7 +60,6 @@ describe( 'when getting a list of services', function() {
 } );
 
 describe( 'when using a check', function() {
-	var result;
 	var check = {
 		ID: 'my-registered-check',
 		Name: 'Testing this check',
@@ -73,7 +69,7 @@ describe( 'when using a check', function() {
 
 	var expected = {
 		'my-registered-check': {
-			Node: 'consul-agent1',
+			Node: 'consul-agent1.leankit.com',
 			CheckID: 'my-registered-check',
 			Name: 'Testing this check',
 			Status: 'critical',
@@ -84,65 +80,18 @@ describe( 'when using a check', function() {
 		}
 	};
 
-	beforeEach( function( done ) {
-		api.agent.checks.register( check )
+	before( function( done ) {
+		api.agent.checks.deregister( check.ID )
 			.then( function( res ) {
 				done();
 			} );
 	} );
 
-	describe( "when listing checks", function() {
-		it( 'should list the created check', function( done ) {
-			api.agent.checks.list()
-				.then( function( checks ) {
-					checks.should.eql( expected );
-					done();
-				} );
-		} );
-	} );
-
-	describe( "when warning a check", function() {
-		it( 'should mark the check as warning', function( done ) {
-			when.all( [
-				api.agent.checks.warn( check.ID, 'uh oh' ),
-				api.agent.checks.list()
-			] ).then( function( res ) {
-				var list = res[ 1 ];
-				var myCheck = list[ check.ID ];
-				myCheck.Status.should.equal( "warning" );
-				myCheck.Output.should.equal( "uh oh" );
+	beforeEach( function( done ) {
+		api.agent.checks.register( check )
+			.then( function( res ) {
 				done();
 			} );
-
-		} );
-	} );
-
-	describe( "when passing a check", function() {
-		it( 'should mark the check as passing', function( done ) {
-			when.all( [
-				api.agent.checks.pass( check.ID ),
-				api.agent.checks.list()
-			] ).then( function( res ) {
-				var list = res[ 1 ];
-				list[ check.ID ].Status.should.equal( "passing" );
-				done();
-			} );
-
-		} );
-	} );
-
-	describe( "when failing a check", function() {
-		it( 'should mark the check as failing', function( done ) {
-			when.all( [
-				api.agent.checks.fail( check.ID ),
-				api.agent.checks.list()
-			] ).then( function( res ) {
-				var list = res[ 1 ];
-				list[ check.ID ].Status.should.equal( "critical" );
-				done();
-			} );
-
-		} );
 	} );
 
 	afterEach( function( done ) {
@@ -152,9 +101,64 @@ describe( 'when using a check', function() {
 			} );
 	} );
 
+	describe( 'when listing checks', function() {
+		it( 'should list the created check', function( done ) {
+			api.agent.checks.list()
+				.then( function( checks ) {
+					checks.should.eql( expected );
+					done();
+				} );
+		} );
+	} );
+
+	describe( 'when warning a check', function() {
+		it( 'should mark the check as warning', function( done ) {
+			api.agent.checks.warn( check.ID, 'uh oh' )
+				.then( function() {
+					return api.agent.checks.list();
+				} )
+				.then( function( list ) {
+					var myCheck = list[ check.ID ];
+					myCheck.Status.should.equal( 'warning' );
+					myCheck.Output.should.equal( 'uh oh' );
+					done();
+				} );
+
+		} );
+	} );
+
+	describe( 'when passing a check', function() {
+		it( 'should mark the check as passing', function( done ) {
+			api.agent.checks.pass( check.ID )
+				.then( function() {
+					return api.agent.checks.list();
+				} )
+				.then( function( list ) {
+					list[ check.ID ].Status.should.equal( 'passing' );
+					done();
+				} );
+
+		} );
+	} );
+
+	describe( 'when failing a check', function() {
+		it( 'should mark the check as failing', function( done ) {
+			api.agent.checks.fail( check.ID )
+				.then( function() {
+					return api.agent.checks.list();
+				} )
+				.then( function( list ) {
+					list[ check.ID ].Status.should.equal( 'critical' );
+					done();
+				} );
+		} );
+	} );
+
+
+
 } );
 
-describe( "when listing members", function() {
+describe( 'when listing members', function() {
 	var members;
 	before( function( done ) {
 		api.agent.listMembers()
@@ -164,9 +168,9 @@ describe( "when listing members", function() {
 			} )
 	} );
 
-	it( "should list the agent members", function() {
-		var names = _.pluck( members, "Name" );
-		names.should.containEql( "consul-agent1" );
-		names.should.containEql( "consul-server1" );
+	it( 'should list the agent members', function() {
+		var names = _.pluck( members, 'Name' );
+		names.should.containEql( 'consul-agent1.leankit.com' );
+		names.should.containEql( 'consul-server1.leankit.com' );
 	} );
 } );

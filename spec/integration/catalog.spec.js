@@ -1,11 +1,12 @@
 require( 'should' );
 var _ = require( 'lodash' );
-var api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 8501 );
+var consulCfg = require( './consul.config.js' )();
+var api = require( '../../src/consul.js' )( 'daedalus-spec', consulCfg );
 
 describe( 'when getting a node\'s services', function() {
 	var result;
 	before( function( done ) {
-		api.catalog.getNode( 'consul-server1' )
+		api.catalog.getNode( 'consul-server1.leankit.com' )
 			.then( function( res ) {
 				result = res;
 				done();
@@ -13,7 +14,7 @@ describe( 'when getting a node\'s services', function() {
 	} );
 
 	it( 'should return the node information', function() {
-		result.Node.Node.should.equal( 'consul-server1' );
+		result.Node.Node.should.equal( 'consul-server1.leankit.com' );
 	} );
 
 	it( 'should return the list of services', function() {
@@ -64,7 +65,7 @@ describe( 'when listing nodes', function() {
 
 	it( 'should return the full list', function() {
 		var nodes = _.pluck( result, 'Node' );
-		nodes.should.containEql( 'consul-agent1' );
-		nodes.should.containEql( 'consul-server1' );
+		nodes.should.containEql( 'consul-agent1.leankit.com' );
+		nodes.should.containEql( 'consul-server1.leankit.com' );
 	} );
 } );

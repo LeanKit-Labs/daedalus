@@ -145,22 +145,14 @@ function getConsulClient( options ) {
 	return client;
 }
 
-module.exports = function( dc, agentHost, agentPort ) {
+module.exports = function( dc, consulCfg ) {
 
-	var agentClient;
-	var catalogClient;
-
-	var agentClientConfig = {
-		host: agentHost,
-		port: agentPort
-	};
-
-	agentClient = getConsulClient( agentClientConfig );
+	var agentClient = getConsulClient( consulCfg );
 
 	var node = { name: hostName, address: address };
 	var kv = require( './kv.js' )( dc, agentClient );
-	var agent = require( './agent.js' )( dc, agentClient, agentHost, agentPort );
-	var catalog = require( './catalog.js' )( dc, agentClient, agentHost, agentPort );
+	var agent = require( './agent.js' )( dc, agentClient );
+	var catalog = require( './catalog.js' )( dc, agentClient );
 	var services = {};
 	var servicePolls = {};
 
@@ -218,7 +210,7 @@ module.exports = function( dc, agentHost, agentPort ) {
 					this.deferUntilTransition( 'ready' );
 				},
 				'connection.failed': function( err ) {
-					debug( 'Cannot connect to local agent %s:%d. Error: %s', agentHost, agentPort, err.stack );
+					debug( 'Cannot connect to local agent %s:%d. Error: %s', consulCfg.host, consulCfg.port, err.stack );
 					this.unavailable = true;
 					setTimeout( function() {
 						this._acquire();

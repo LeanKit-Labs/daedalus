@@ -1,8 +1,10 @@
 require( 'should' );
 var path = require( 'path' );
 var _ = require( 'lodash' );
-var api = require( '../../src/consul.js' )( 'daedalus-spec', 'localhost', 8501 );
-var daedalus = require( '../../src/index.js' )( 'test', { dc: 'daedalus-spec', http: 8501 } );
+var consulCfg = require( './consul.config.js' )();
+var consulCfgCopy = require( './consul.config.js' )();
+var api = require( '../../src/consul.js' )( 'daedalus-spec', consulCfg );
+var daedalus = require( '../../src/index.js' )( 'test', { dc: 'daedalus-spec', consul: consulCfgCopy } );
 var when = require( 'when' );
 var duration = 3000;
 

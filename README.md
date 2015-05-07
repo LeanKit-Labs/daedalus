@@ -303,8 +303,57 @@ If you see an area for improvement or want to add a feature, this section is for
 ### Git Clone & NPM Install
 Once you've cloned from your fork, you should be able to run `npm install` and get all dependencies. This library uses gulp, gulp mocha, should, redis, riaktive and wascally.
 
-### Consul setup
-Because the specs need a pristine datacenter to work in, you'll need to set up a data center using the scripts and config files provided in the ./consul directory. They use non-standard ports so that if you already have a local consul cluster working, this shouldn't interfere with it. It's a chore to set it up, but as soon as I started working on other projects using a normal dev cluster, it broke the specs.
+### Vagrant
+
+Daedalus now provides a sample `Vagrantfile` that will set up a virtual machine that runs both a Consul server node and a Consul agent node. It will forward Consul's default ports to `localhost`.
+
+**First, you will need to copy the sample file to a usable file:**
+
+```bash
+$ cp Vagrantfile.sample Vagrantfile
+```
+
+Adjust any necessary settings. Then, from the root of the project, run:
+
+```bash
+$ vagrant up
+```
+
+This will create your box. Right now, it only supports the `vmware_fusion` plugin. To access the box, run:
+
+```bash
+$ vagrant ssh
+```
+
+Once inside, you can view the Consul agent logs by executing:
+
+```bash
+$ docker logs -f consul-agent1
+```
+---
+
+**Important:**
+
+Daedalus' tests currently run with security enabled. Vagrant will set up the Consul cluster securely using both [gossip encryption and TLS](https://consul.io/docs/agent/encryption.html). The necessary certificates are located in `/.consul`. All this is handled automatically for you, but the one caveat is that you will need to add an entry to your `hosts` file in order for the certificates to work correctly. In your `hosts` file add:
+
+```
+127.0.0.1	consul-agent1.leankit.com
+```
+
+This will map the domain to your local machine so that the tests can run correctly.
+
+---
+
+Click here for more information on [Vagrant](http://vagrantup.com), [Docker](http://docker.com), and [the Consul Docker image](https://github.com/progrium/docker-consul).
+
+*To run tests using Vagrant:*
+
+Execute from the **host machine:**
+
+```bash
+$ vagrant up
+$ gulp
+```
 
 ### Tests
 Right now I only have integration tests. You can run these with `gulp integration`. Eventually I hope to provide some unit test coverage to specific modules so that over time it's easier to work on w/o having to have the specific Consul setup.

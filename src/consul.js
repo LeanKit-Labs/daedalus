@@ -3,7 +3,7 @@ var os = require( 'os' );
 var when = require( 'when' );
 var lift = require( 'when/node' ).lift;
 var _ = require( 'lodash' );
-var machina = require( 'machina' )( _ );
+var machina = require( 'machina' );
 var hostName = os.hostname();
 var interfaces = os.networkInterfaces();
 var debug = require( 'debug' )( 'daedalus:consul' );
@@ -27,10 +27,10 @@ function iterativeWait( iterate, predicate, limit ) {
 		iterations++;
 		return predicate( resp ) || iterations > limit;
 	}, function( resp ) {
-		if ( predicate( resp ) ) {
-			resolved = true;
-		}
-	}, 0 )
+			if ( predicate( resp ) ) {
+				resolved = true;
+			}
+		}, 0 )
 		.then( function( thing ) {
 			return thing;
 		} );
@@ -231,7 +231,7 @@ module.exports = function( dc, consulCfg ) {
 						} else {
 							call.resolve( result );
 						}
-					} catch (err) {
+					} catch ( err ) {
 						call.reject( err );
 					}
 				}

@@ -1,6 +1,6 @@
 {
   "name": "daedalus",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Automatic resolution of service dependencies and configuration via consul",
   "main": "src/index.js",
   "scripts": {
@@ -8,34 +8,47 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/arobson/node-consul"
+    "url": "git://github.com/LeanKit-Labs/daedalus"
   },
   "keywords": [
     "consul"
   ],
-  "author": "Alex Robson",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/arobson/node-consul/issues"
+  "author": "LeanKit",
+  "contributors": [
+    {
+      "name": "Alex Robson",
+      "url": "http://nerdventure.io"
+    },
+    {
+      "name": "Brian Edgerton",
+      "url": "https://github.com/brianedgerton"
+    }
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   },
-  "homepage": "https://github.com/arobson/node-consul",
+  "license": "MIT License - http://opensource.org/licenses/MIT",
+  "bugs": {
+    "url": "https://github.com/LeanKit-Labs/daedalus/issues"
+  },
+  "homepage": "https://github.com/LeanKit-Labs/daedalus",
   "devDependencies": {
     "biggulp": "0.0.4",
     "gulp": "~3.8.6",
     "gulp-mocha": "~0.4.1",
     "processhost": "^0.1.13",
     "redis": "~0.11.0",
-    "riaktive": "~0.1.0-10",
+    "riaktive": "~0.2.0",
     "should": "~3.3.1",
     "wascally": "~0.2.4"
   },
   "dependencies": {
-    "configya": "~0.0.6",
+    "configya": "~0.2.1",
     "consul": "^0.14.0",
     "debug": "^1.0.4",
-    "fount": "~0.0.5",
+    "fount": "~0.1.0",
     "lodash": "~2.4.1",
-    "machina": "git://github.com/ifandelse/machina.js#c690cb39559a4086aca677770f95add44269a038",
+    "machina": "~1.0.0",
     "request": "^2.34.0",
     "when": "^3.1.0"
   }

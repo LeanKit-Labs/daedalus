@@ -22,11 +22,13 @@ function initialize( name, fount, opts ) {
 		var svc = opt.service;
 		var keys = [];
 		lifeCycles[ dep ] = opt.lifecycle;
-		if( svc ) {
+		if ( svc ) {
 			keys.push( 'service.' + dep );
 			serviceMap[ dep ] = when.join( dc.getLocal( svc ), dc.getAny( svc ) )
 				.then( function( list ) {
-					var nodes = _.uniq( _.flatten( list ), function( x ) { return x.ID; } );
+					var nodes = _.uniq( _.flatten( list ), function( x ) {
+						return x.ID;
+					} );
 					debug( 'Nodes found for %s: %s', dep, JSON.stringify( nodes ) );
 					return opt.all ? nodes : nodes[ 0 ];
 				} )
@@ -34,16 +36,16 @@ function initialize( name, fount, opts ) {
 					debug( 'Failed to locate service %s', svc );
 				} );
 		}
-		if( conf ) {
+		if ( conf ) {
 			var key = [ serviceName, conf ].join( '-' );
 			keys.push( 'config.' + dep );
 			configKeyMap[ dep ] = key;
 			configMap[ dep ] = dc.getConfig( key );
-			if( opt.config ) {
+			if ( opt.config ) {
 				requiredKey[ dep ] = true;
 			}
 		}
-		if( opt.module ) {
+		if ( opt.module ) {
 			modules[ dep ] = { dependencies: keys, module: opt.module };
 		}
 	} );
@@ -51,24 +53,24 @@ function initialize( name, fount, opts ) {
 	var configPromises = whenKeys.all( configMap )
 		.then( function( configuration ) {
 			_.each( configuration, function( config, name ) {
-				if( config !== undefined || !requiredKey[ name ] ) {
+				if ( config !== undefined || !requiredKey[ name ] ) {
 					var val = config ? config.value : undefined;
 					debug( 'Registering %s for %s', JSON.stringify( val ), name );
 					fount( 'config' ).register( name, val );
-				} else if( requiredKey[ name ] ){
+				} else if ( requiredKey[ name ] ) {
 					throw new Error( 'config key "' + configKeyMap[ name ] + '" could not be found.' );
 				}
 			} );
 		} )
 		.then( null, function( err ) {
-			var msg = ( err.toString().replace( 'Error:', '' ) );
+			var msg = ( err.toString().replace( 'Error:', '' ));
 			throw new Error( 'failed to retrieve configuration because' + msg );
 		} );
 
 	var servicePromises = whenKeys.all( serviceMap )
 		.then( function( services ) {
 			_.each( services, function( service, name ) {
-				if( _.isEmpty( service ) ) {
+				if ( _.isEmpty( service ) ) {
 					throw new Error( 'service "' + name + '" could not be found.' );
 				} else {
 					debug( 'Registering %s for %s', JSON.stringify( service ), name );
@@ -77,35 +79,38 @@ function initialize( name, fount, opts ) {
 			} );
 		} )
 		.then( null, function( err ) {
-			var msg = ( err.toString().replace( 'Error:', '' ) );
-			throw new Error ( 'failed to resolve dependencies because' + msg );
+			var msg = ( err.toString().replace( 'Error:', '' ));
+			throw new Error( 'failed to resolve dependencies because' + msg );
 		} );
 
 	return when.all( [
-			configPromises,
-			servicePromises
-		] )
-	.then( function() {
-		_.each( modules, function( opts, name ) {
-			var userModule = fount.inject( opts.dependencies, require( path.join( process.cwd(), opts.module ) ) );
-			fount.register( name, userModule, lifeCycles[ name ] || 'static' );
+		configPromises,
+		servicePromises
+	] )
+		.then( function() {
+			_.each( modules, function( opts, name ) {
+				var userModule = fount.inject( opts.dependencies, require( path.join( process.cwd(), opts.module ) ) );
+				fount.register( name, userModule, lifeCycles[ name ] || 'static' );
+			} );
+			return fount;
 		} );
-		return fount;
-	} );
 }
 
 module.exports = function( name, cfg, fount ) {
 	cfg = cfg || {};
+
+	var consulCfg = cfg.consul;
+
 	config = require( 'configya' )( {
 		CONSUL_DC: cfg.dc || 'dc1',
 		SERVICE_NAME: name,
-		CONSUL_AGENT: cfg.agent || 'localhost',
-		CONSUL_CATALOG: cfg.catalog || 'localhost',
-		CONSUL_HTTP: cfg.http || 8500
+		CONSUL_AGENT: cfg.host || 'localhost',
+		CONSUL_HTTP: cfg.port || 8500
 	} );
 	dcName = config.consul.datacenter;
 	serviceName = config.service.name;
-	dc = api( dcName, config.consul.agent, config.consul.catalog, config.consul.http );
+
+	dc = api( dcName, consulCfg );
 
 	return {
 		initialize: initialize.bind( undefined, serviceName, fount ),

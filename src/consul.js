@@ -1,18 +1,21 @@
-var request = require( 'request' );
+var consulFactory = require( 'consul' );
 var os = require( 'os' );
 var when = require( 'when' );
+var lift = require( 'when/node' ).lift;
 var _ = require( 'lodash' );
 var machina = require( 'machina' )( _ );
 var hostName = os.hostname();
 var interfaces = os.networkInterfaces();
 var debug = require( 'debug' )( 'daedalus:consul' );
-var addresses = _.find( interfaces, function( interface, id ) { return /^[eE]([nN]|[tT][hH])[0-9]$/.test( id ); } );
+var addresses = _.find( interfaces, function( interface, id ) {
+	return /^[eE]([nN]|[tT][hH])[0-9]$/.test( id );
+} );
 var address = _.where( addresses, { family: 'IPv4' } )[ 0 ].address;
 
 function waitForService( catalog, serviceName, tag, wait ) {
 	return function() {
 		debug( 'Wating for service %s in catalog', serviceName );
-		return catalog.getService( serviceName, tag, wait || '10ms' ); 
+		return catalog.getService( serviceName, tag, wait || '10ms' );
 	};
 }
 
@@ -20,16 +23,14 @@ function iterativeWait( iterate, predicate, limit ) {
 	var iterations = 0,
 		resolved = false;
 	limit = limit || 10;
-	return when.iterate( iterate, 
-		function( resp ) {
-			iterations++;
-			return predicate( resp ) || iterations > limit;
-		},
-		function( resp ) {
-			if( predicate( resp ) ){
-				resolved = true;
-			}
-		}, 0 )
+	return when.iterate( iterate, function( resp ) {
+		iterations++;
+		return predicate( resp ) || iterations > limit;
+	}, function( resp ) {
+		if ( predicate( resp ) ) {
+			resolved = true;
+		}
+	}, 0 )
 		.then( function( thing ) {
 			return thing;
 		} );
@@ -40,8 +41,10 @@ function getAny( catalog, serviceName, tag, wait, limit ) {
 	return when.promise( function( resolve, reject ) {
 		catalog.getService( serviceName, tag )
 			.then( function( list ) {
-				if( list.length === 0 ) {
-					iterativeWait( iterate, function( x ) { return x && x.length; } ,limit )
+				if ( list.length === 0 ) {
+					iterativeWait( iterate, function( x ) {
+						return x && x.length;
+					}, limit )
 						.then( resolve );
 				} else {
 					resolve( list );
@@ -64,9 +67,11 @@ function getLocal( catalog, agent, node, serviceName, tag, wait, limit ) {
 	return when.promise( function( resolve, reject ) {
 		agent.listServices()
 			.then( function( list ) {
-				if( !list[ serviceName ] ) {
+				if ( !list[ serviceName ] ) {
 					debug( 'No service %s in agent list (get local)', serviceName );
-					iterativeWait( iterate, function( x ) { return x && x.length; } ,limit )
+					iterativeWait( iterate, function( x ) {
+						return x && x.length;
+					}, limit )
 						.then( function( matches ) {
 							resolve( _.where( matches, { 'Node': node } ) );
 						} );
@@ -78,7 +83,7 @@ function getLocal( catalog, agent, node, serviceName, tag, wait, limit ) {
 			.then( null, function( err ) {
 				debug( 'Error trying to find %s locally: %s', serviceName, err.stack );
 			} );
-	} ); 
+	} );
 }
 
 function register( agent, serviceName, port, tags, check ) {
@@ -89,11 +94,65 @@ function setConfig( kv, serviceName, config ) {
 	return kv.set( serviceName, config );
 }
 
-module.exports = function( dc, agentHost, catalogHost, agentPort ) {
+var toLift = [
+	'kv.get', 'kv.keys', 'kv.set', 'kv.del',
+	'agent.check.list', 'agent.check.register', 'agent.check.deregister',
+	'agent.check.pass', 'agent.check.warn', 'agent.check.fail',
+	'agent.service.list', 'agent.service.register', 'agent.service.deregister', 'agent.service.maintenance',
+	'agent.members', 'agent.self', 'agent.maintenance', 'agent.join', 'agent.forceLeave',
+	'catalog.datacenters', 'catalog.node.list', 'catalog.node.services',
+	'catalog.service.list', 'catalog.service.nodes'
+];
+
+function _set( obj, k, v ) {
+	return _resolve( obj, k, v );
+}
+
+function _get( obj, k ) {
+	return _resolve( obj, k );
+}
+
+function _resolveRecursive( obj, keys, v ) {
+	var key = keys.shift();
+
+	if ( key in obj ) {
+		if ( keys.length ) {
+			return _resolveRecursive( obj[ key ], keys, v );
+		} else {
+			if ( !_.isUndefined( v ) ) {
+				obj[ key ] = v;
+			}
+			return obj[ key ];
+		}
+	} else {
+		return false;
+	}
+}
+
+function _resolve( obj, k, v ) {
+	var keys = k.split( '.' );
+	return _resolveRecursive( obj, keys, v );
+}
+
+function getConsulClient( options ) {
+	var client = consulFactory( options );
+	var lifted;
+	_.each( toLift, function( path ) {
+		lifted = lift( _get( client, path ) );
+		_set( client, path, lifted );
+	} );
+
+	return client;
+}
+
+module.exports = function( dc, consulCfg ) {
+
+	var agentClient = getConsulClient( consulCfg );
+
 	var node = { name: hostName, address: address };
-	var kv = require( './kv.js' )( dc, agentHost, agentPort );
-	var agent = require( './agent.js' )( dc, agentHost, agentPort );
-	var catalog = require( './catalog.js' )( dc, catalogHost, agentPort );
+	var kv = require( './kv.js' )( dc, agentClient );
+	var agent = require( './agent.js' )( dc, agentClient );
+	var catalog = require( './catalog.js' )( dc, agentClient );
 	var services = {};
 	var servicePolls = {};
 
@@ -151,7 +210,7 @@ module.exports = function( dc, agentHost, catalogHost, agentPort ) {
 					this.deferUntilTransition( 'ready' );
 				},
 				'connection.failed': function( err ) {
-					debug( 'Cannot connect to local agent %s:%d. Error: %s', agentHost, agentPort, err.stack );
+					debug( 'Cannot connect to local agent %s:%d. Error: %s', consulCfg.host, consulCfg.port, err.stack );
 					this.unavailable = true;
 					setTimeout( function() {
 						this._acquire();
@@ -165,14 +224,14 @@ module.exports = function( dc, agentHost, catalogHost, agentPort ) {
 				operate: function( call ) {
 					try {
 						var result = call.operation.apply( undefined, call.argList );
-						if( result && result.then ) {
+						if ( result && result.then ) {
 							result
 								.then( call.resolve )
 								.then( null, call.reject );
 						} else {
 							call.resolve( result );
 						}
-					} catch( err ) {
+					} catch (err) {
 						call.reject( err );
 					}
 				}
@@ -184,12 +243,12 @@ module.exports = function( dc, agentHost, catalogHost, agentPort ) {
 
 	function map( source, target ) {
 		_.each( source, function( prop, name ) {
-			if( _.isFunction( prop ) ) {
-				target[ name ] = function() { 
+			if ( _.isFunction( prop ) ) {
+				target[ name ] = function() {
 					var list = Array.prototype.slice.call( arguments, 0 );
 					return machine.operate( prop, list );
 				}.bind( machine );
-			} else if( _.isObject( prop ) ) {
+			} else if ( _.isObject( prop ) ) {
 				target[ name ] = {};
 				map( prop, target[ name ] );
 			} else {

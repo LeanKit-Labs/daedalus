@@ -1,39 +1,54 @@
 var _ = require( 'lodash' );
-var http = require( './http.js' );
+var debug = require( 'debug' )( 'daedalus:kv' );
 
-function cas( dc, base, key, value ) {
-	var doc = strip( value ),
-		opts = {
-			dc: dc,
-			cas: value._consul ? value._consul.ModifyIndex : 0
-		},
-		query = http.buildQuery( opts ),
-		url = http.join( base, key, query );
-	return http
-		.put( url, doc )
-		.then( function( resp ) {
-			return resp.body == 'true\n';
-		} );
+function cas( dc, kv, key, value ) {
+	var options = {
+		key: key,
+		value: prepare( value ),
+		dc: dc,
+		cas: value._consul ? value._consul.ModifyIndex : 0
+	};
+
+	debug( 'Check and set key %s as %s', key, JSON.stringify( options.value ) );
+
+	return kv.set( options ).then( function( result ) {
+		return result[ 0 ];
+	} );
 }
 
-function del( dc, base, key, recurse ) {
-	var query = http.buildQuery( {
-			dc: dc,
-			recurse: recurse
-		} ),
-		url = http.join( base, key, query );
-	return http.del( url );
+function del( dc, kv, key, recurse ) {
+	debug( 'Deleting key %s', key );
+	return kv.del( {
+		key: key,
+		dc: dc,
+		recurse: recurse
+	} ).then( function( result ) {
+		return result[ 0 ];
+	} );
 }
 
-function get( dc, base, key ) {
-	var query = http.buildQuery( { dc: dc } ),
-		url = http.join( base, key, query );
-	return http
-		.get( url ) 
+function get( dc, kv, key ) {
+	var options = {
+		dc: dc,
+		key: key
+	};
+
+	debug( 'Getting key %s', key );
+
+	return kv.get( options )
 		.then( function( list ) {
-			var items = _.map( list, function( item ) {
-				var json = new Buffer( item.Value, 'base64' ).toString( 'ascii' ),
-					parsed = JSON.parse( json );
+			var result = list[ 0 ];
+
+			if ( !result ) {
+				return result;
+			}
+
+			if ( !_.isArray( result ) ) {
+				result = [ result ];
+			}
+
+			var items = _.map( result, function( item ) {
+				var parsed = item && item.Value ? JSON.parse( item.Value ) : {};
 				parsed._consul = {
 					CreateIndex: item.CreateIndex,
 					ModifyIndex: item.ModifyIndex,
@@ -42,36 +57,40 @@ function get( dc, base, key ) {
 				};
 				return parsed;
 			} );
-			return items.length === 0 ? undefined : 
+
+			var returnVal = items.length === 0 ? undefined :
 				( items.length > 1 ) ? items : items[ 0 ];
+
+			debug( 'Result for %s is %s', key, JSON.stringify( returnVal ) );
+			return returnVal;
 		} );
 }
 
-function put( dc, base, key, value ) {
-	var doc = strip( value ),
-		opts = { dc: dc },
-		query = http.buildQuery( opts ),
-		url = http.join( base, key, query );
-	return http
-		.put( url, doc )
-		.then( function( resp ) {
-			return resp.body == 'true\n';
+function put( dc, kv, key, value ) {
+	var options = {
+		key: key,
+		value: prepare( value ),
+		dc: dc
+	};
+
+	debug( 'Setting key %s to %s', key, JSON.stringify( options.value ) );
+
+	return kv.set( options )
+		.then( function( result ) {
+			return result[ 0 ];
 		} );
 }
 
-function strip( doc ) {
-	return _.omit( doc, '_consul' );
+function prepare( doc ) {
+	return JSON.stringify( _.omit( doc, '_consul' ) );
 }
 
-module.exports = function( dc, hostName, port, version ) {
-	version = version || 'v1';
-	hostName = hostName || 'localhost';
-	var base = http.join( 'http://', hostName, ':', port, '/', version, '/kv/' );
-	
+module.exports = function( dc, client ) {
+	var kv = client.kv;
 	return {
-		cas: cas.bind( undefined, dc, base ),
-		del: del.bind( undefined, dc, base ),
-		get: get.bind( undefined, dc, base ),
-		set: put.bind( undefined, dc, base )
+		cas: cas.bind( undefined, dc, kv ),
+		del: del.bind( undefined, dc, kv ),
+		get: get.bind( undefined, dc, kv ),
+		set: put.bind( undefined, dc, kv )
 	};
 };

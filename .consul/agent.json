@@ -1,0 +1,16 @@
+{
+	"datacenter": "daedalus-spec",
+	"encrypt": "ONLqkgLoWaiYfykTLd7Tuw==",
+	"verify_outgoing": true,
+	"verify_incoming": true,
+	"ports": {
+		"http": -1,
+		"https": 8500
+	},
+	"addresses": {
+		"https": "0.0.0.0"
+	},
+	"ca_file": "/etc/.consul/root.cer",
+	"cert_file": "/etc/.consul/consul-agent1.leankit.com/consul-agent1.leankit.com.cer",
+	"key_file": "/etc/.consul/consul-agent1.leankit.com/consul-agent1.leankit.com.key"
+}

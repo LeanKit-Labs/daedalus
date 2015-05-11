@@ -1,125 +1,136 @@
 var _ = require( 'lodash' );
-var http = require( './http.js' );
 var debug = require( 'debug' )( 'daedalus:agent' );
 
-function deregisterCheck( base, checkId ) {
-	var url = http.join( base, 'check/deregister/', checkId );
-	return http.get( url );
+function normalizeResult( result ) {
+	return result[ 0 ];
 }
 
-function failCheck( base, checkId, note ) {
-	var query = http.buildQuery( { note: note } ),
-		url = http.join( base, 'check/fail/', checkId, query );
-	return http.get( url );
+function deregisterCheck( agent, checkId ) {
+	return agent.check.deregister( checkId )
+		.then( normalizeResult );
 }
 
-function listChecks( base ) {
-	return http.get( http.join( base, 'checks' ) );
+function failCheck( agent, checkId, note ) {
+	return agent.check.fail( {
+		id: checkId,
+		note: note
+	} ).then( normalizeResult );
 }
 
-function passCheck( base, checkId, note ) {
-	var query = http.buildQuery( { note: note } ),
-		url = http.join( base, 'check/pass/', checkId, query );
-	return http.get( url );
+function listChecks( agent ) {
+	return agent.check.list()
+		.then( normalizeResult );
 }
 
-function registerCheck( base, check ) {
-	var url = http.join( base, 'check/register' );
-	return http.put( url, check )
-		.then( function( resp ) {
-			return resp.succeeded;
-		} );
+function passCheck( agent, checkId, note ) {
+	return agent.check.pass( {
+		id: checkId,
+		note: note
+	} ).then( normalizeResult );
 }
 
-function warnCheck( base, checkId ) {
-	var query = http.buildQuery( { note: note } ),
-		url = http.join( base, 'check/warn/', checkId, query );
-	return http.get( url );
+function registerCheck( agent, check ) {
+	return agent.check.register( check )
+		.then( normalizeResult );
 }
 
-function deregister( base, hostName, serviceId ) {
-	var url = http.join( base, 'service/deregister/', [ serviceId, hostName ].join( '@' ) );
-	return http.get( url );
+function warnCheck( agent, checkId, note ) {
+	return agent.check.warn( {
+		id: checkId,
+		note: note
+	} ).then( normalizeResult );
 }
 
-function getInfo( base ) {
-	return http.get( http.join( base, 'self' ) );
+function deregister( agent, hostName, serviceId ) {
+	var id = [ serviceId, hostName ].join( '@' );
+	return agent.service.deregister( {
+		id: id
+	} );
 }
 
-function listMembers( base ) {
-	return http.get( http.join( base, 'members' ) );
+function getInfo( agent ) {
+	return agent.self()
+		.then( normalizeResult );
 }
 
-function listServices( base, address ) {
-	var url = http.join( base, 'services' );
-	return http.get( url )
-		.then( function( list ) {
+function listMembers( agent ) {
+	return agent.members()
+		.then( normalizeResult );
+}
+
+function listServices( agent, address ) {
+	return agent.service.list()
+		.then( function( result ) {
+			var list = result[ 0 ];
+
 			_.each( list, function( service ) {
 				service.Address = address;
 			} );
+
 			return list;
 		} );
 }
 
-function joinNode( base, nodeUrl, wan ) {
-	var query = http.buildQuery( { wan: wan } ),
-		url = http.join( base, 'agent/join/', nodeUrl, query );
-	return http.get( url );
+function joinNode( agent, nodeUrl, wan ) {
+	return agent.join( {
+		address: nodeUrl,
+		wan: wan
+	} ).then( normalizeResult );
 }
 
-function leaveNode( base, nodeUrl ) {
-	var url = http.join( base, 'agent/force-leave/', nodeUrl );
-	return http.get( url );
+function leaveNode( agent, nodeUrl ) {
+	return agent.forceLeave( {
+		node: nodeUrl
+	} ).then( normalizeResult );
 }
 
-function register( base, hostName, name, port, tags, check ) {
-	var url = http.join( base, 'service/register' );
-	return http.put( url, {
-		ID: [ name, hostName ].join( '@' ),
-		Name: name,
-		Tags: tags || [],
-		Port: port,
-		Check: check
-	} ).then( function( resp ) {
-		return resp.succeeded;
-	} );
+function register( agent, hostName, name, port, tags, check ) {
+	var props = {
+		id: [ name, hostName ].join( '@' ),
+		name: name,
+		tags: tags,
+		port: port,
+		check: check
+	};
+
+	return agent.service.register( props );
 }
 
-module.exports = function( dc, hostName, port, version ) {
-	version = version || 'v1';
+module.exports = function( dc, client, hostName ) {
+
+	var agent = client.agent;
+
 	hostName = hostName || 'localhost';
 	var self = { address: undefined, name: undefined };
-	var base = http.join( 'http://', hostName, ':', port, '/', version, '/agent/' );
-	debug( 'Local agent url set to %s', base );
 	return {
 		address: self.address,
 		checks: {
-			deregister: deregisterCheck.bind( undefined, base ),
-			fail: 		failCheck.bind( undefined, base ),
-			list: 		listChecks.bind( undefined, base ),
-			pass: 		passCheck.bind( undefined, base ),
-			register: 	registerCheck.bind( undefined, base ),
-			warn: 		warnCheck.bind( undefined, base )
+			deregister: deregisterCheck.bind( undefined, agent ),
+			fail: failCheck.bind( undefined, agent ),
+			list: listChecks.bind( undefined, agent ),
+			pass: passCheck.bind( undefined, agent ),
+			register: registerCheck.bind( undefined, agent ),
+			warn: warnCheck.bind( undefined, agent )
 		},
-		deregister: 	function( serviceId ) {
-			return deregister( base, self.name, serviceId );
+		deregister: function( serviceId ) {
+			return deregister( agent, self.name, serviceId );
 		},
-		getInfo: 		function() {
-			return getInfo( base )
+		getInfo: function() {
+			return getInfo( agent )
 				.then( function( info ) {
 					self.address = info.Config.AdvertiseAddr;
 					self.name = info.Config.NodeName;
 					return info;
 				} );
 		},
-		join: 			joinNode.bind( undefined, base ),
-		leave: 			leaveNode.bind( undefined, base ),
-		listMembers: 	listMembers.bind( undefined, base ),
-		listServices: 	function() {
-			return listServices( base, self.address );
+		join: joinNode.bind( undefined, agent ),
+		leave: leaveNode.bind( undefined, agent ),
+		listMembers: listMembers.bind( undefined, agent ),
+		listServices: function() {
+			return listServices( agent, self.address );
 		},
-		register: 		function( serviceName, port, tags, check ) {
-			return register( base, self.name, serviceName, port, tags, check );
+		register: function( serviceName, port, tags, check ) {
+			return register( agent, self.name, serviceName, port, tags, check );
 		}
 	};
 };

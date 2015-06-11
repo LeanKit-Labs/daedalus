@@ -7,5 +7,8 @@
 	"verify_incoming": true,
 	"ca_file": "/etc/.consul/root.cer",
 	"cert_file": "/etc/.consul/consul-server1.leankit.com/consul-server1.leankit.com.cer",
-	"key_file": "/etc/.consul/consul-server1.leankit.com/consul-server1.leankit.com.key"
+	"key_file": "/etc/.consul/consul-server1.leankit.com/consul-server1.leankit.com.key",
+	"acl_datacenter": "daedalus-spec",
+	"acl_default_policy": "deny",
+	"acl_master_token": "DAEDALUS_TOKEN"
 }

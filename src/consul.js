@@ -142,10 +142,15 @@ function getConsulClient( options ) {
 		_set( client, path, lifted );
 	} );
 
+	if ( options.token ) {
+		client.ACL_TOKEN = options.token;
+	}
+
 	return client;
 }
 
-module.exports = function( dc, consulCfg ) {
+module.exports = function( consulCfg ) {
+	var dc = consulCfg.dc;
 
 	var agentClient = getConsulClient( consulCfg );
 
@@ -153,8 +158,6 @@ module.exports = function( dc, consulCfg ) {
 	var kv = require( './kv.js' )( dc, agentClient );
 	var agent = require( './agent.js' )( dc, agentClient );
 	var catalog = require( './catalog.js' )( dc, agentClient );
-	var services = {};
-	var servicePolls = {};
 
 	var proxy = {
 		agent: agent,

@@ -99,18 +99,21 @@ function initialize( name, fount, opts ) {
 module.exports = function( name, cfg, fount ) {
 	cfg = cfg || {};
 
-	var consulCfg = cfg.consul;
-
 	config = require( 'configya' )( {
-		CONSUL_DC: cfg.dc || 'dc1',
 		SERVICE_NAME: name,
-		CONSUL_AGENT: cfg.host || 'localhost',
-		CONSUL_HTTP: cfg.port || 8500
+		CONSUL_DC: cfg.dc || 'dc1',
+		CONSUL_HOST: cfg.host || 'localhost',
+		CONSUL_PORT: cfg.port || 8500,
+		CONSUL_CA: cfg.ca || null,
+		CONSUL_CERT: cfg.cert || null,
+		CONSUL_KEY: cfg.key || null,
+		CONSUL_SECURE: cfg.secure || false,
+		CONSUL_TOKEN: cfg.token || null
 	} );
-	dcName = config.consul.datacenter;
+
 	serviceName = config.service.name;
 
-	dc = api( dcName, consulCfg );
+	dc = api( config.consul );
 
 	return {
 		initialize: initialize.bind( undefined, serviceName, fount ),

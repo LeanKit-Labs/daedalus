@@ -1,13 +1,22 @@
 var _ = require( 'lodash' );
 var debug = require( 'debug' )( 'daedalus:kv' );
 
+var tokenizeFn = function( client, options ) {
+	if ( client.ACL_TOKEN ) {
+		options = _.merge( { token: client.ACL_TOKEN }, options );
+	}
+	return options;
+};
+
+var tokenize;
+
 function cas( dc, kv, key, value ) {
-	var options = {
+	var options = tokenize( {
 		key: key,
 		value: prepare( value ),
 		dc: dc,
 		cas: value._consul ? value._consul.ModifyIndex : 0
-	};
+	} );
 
 	debug( 'Check and set key %s as %s', key, JSON.stringify( options.value ) );
 
@@ -18,20 +27,20 @@ function cas( dc, kv, key, value ) {
 
 function del( dc, kv, key, recurse ) {
 	debug( 'Deleting key %s', key );
-	return kv.del( {
+	return kv.del( tokenize( {
 		key: key,
 		dc: dc,
 		recurse: recurse
-	} ).then( function( result ) {
+	} ) ).then( function( result ) {
 		return result[ 0 ];
 	} );
 }
 
 function get( dc, kv, key ) {
-	var options = {
+	var options = tokenize( {
 		dc: dc,
 		key: key
-	};
+	} );
 
 	debug( 'Getting key %s', key );
 
@@ -67,11 +76,11 @@ function get( dc, kv, key ) {
 }
 
 function put( dc, kv, key, value ) {
-	var options = {
+	var options = tokenize( {
 		key: key,
 		value: prepare( value ),
 		dc: dc
-	};
+	} );
 
 	debug( 'Setting key %s to %s', key, JSON.stringify( options.value ) );
 
@@ -86,6 +95,9 @@ function prepare( doc ) {
 }
 
 module.exports = function( dc, client ) {
+
+	tokenize = tokenizeFn.bind( undefined, client );
+
 	var kv = client.kv;
 	return {
 		cas: cas.bind( undefined, dc, kv ),

@@ -1,7 +1,7 @@
 require( 'should' );
 var _ = require( 'lodash' );
 var consulCfg = require( './consul.config.js' )();
-var api = require( '../../src/consul.js' )( 'daedalus-spec', consulCfg );
+var api = require( '../../src/consul.js' )( consulCfg );
 
 describe( 'when getting a node\'s services', function() {
 	var result;

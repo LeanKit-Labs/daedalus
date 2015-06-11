@@ -32,16 +32,26 @@ The optional config hash allows you to provide custom values for the following p
 
 ```javascript
 {
-	dc: 'dc1', // data center name, defaults to dc1,
-	agent: 'localhost', // the address of the local agent
-	catalog: 'localhost' // the address of the catalog API
+	dc: 'dc1', // Consul datacenter
+	host: 'localhost', // Consul host
+	port: 8500, // Consul port
+	ca: null, // Consul certificate authority (if using HTTPS)
+	cert: null, // Consul SSL certificate (if using HTTPS)
+	key: null, // Consul SSL key (if using HTTPS)
+	secure: false, // Use HTTPS
+	token: null // Consul ACL Token
 }
 ```
 You can also control these values via the following environment variables:
 
  * CONSUL_DC
- * CONSUL_AGENT
- * CONSUL_CATALOG
+ * CONSUL_HOST
+ * CONSUL_PORT
+ * CONSUL_CA
+ * CONSUL_CERT
+ * CONSUL_KEY
+ * CONSUL_SECURE
+ * CONSUL_TOKEN
 
 **Daedalus after-the-fact (use when you already have your own fount instance)
 ```javascript
@@ -180,7 +190,7 @@ The modules for each are returning promises or objects as `fount` will accept ei
 
 // this is your service's entry point
 module.exports = function( rabbit, redis, riak ) {
-	
+
 };
 ```
 
@@ -190,19 +200,19 @@ module.exports = function( rabbit, redis, riak ) {
 var main = require( './main.js' );
 var daedalus = require( 'daedalus' )( 'myGreatService' ); // your service/app name is required'
 daedalus.initialize( {
-	riak: { 
+	riak: {
 		service: 'riak',
 		config: 'riak',
 		module: './riak.js',
 		all: true
 	},
-	rabbit: { 
-		service: 'rabbitmq', 
-		config: 'rabbitmq', 
-		module: './rabbit.js' 
+	rabbit: {
+		service: 'rabbitmq',
+		config: 'rabbitmq',
+		module: './rabbit.js'
 	},
-	redis: { 
-		service: 'redis', 
+	redis: {
+		service: 'redis',
 		options: 'redis',
 		module: './redis.js'
 	},
@@ -230,7 +240,7 @@ var _ = require( 'lodash' );
 module.exports = function( service, config ) {
 	// service is the information obtained from Consul: address and port
 	// config is the value (if any) obtained by the config|options key
-	var connection = { 
+	var connection = {
 		connection: {
 			server: service.Address,
 			port: service.Port

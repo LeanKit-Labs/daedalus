@@ -6,8 +6,10 @@ var _ = require( 'lodash' ),
 	nodeName = 'consul-agent1.leankit.com',
 	consulCfg = {
 		host: nodeName,
-		port: 8501,
-		secure: true
+		port: 8500,
+		secure: true,
+		dc: 'daedalus-spec',
+		token: 'DAEDALUS_TOKEN'
 	};
 
 module.exports = function() {

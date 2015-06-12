@@ -2,3 +2,8 @@ demo/
 tmp/
 node_modules/
 consul/
+.vagrant/
+.consul/
+/Vagrantfile
+/Vagrantfile.sample
+spec/

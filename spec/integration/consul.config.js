@@ -7,7 +7,9 @@ var _ = require( 'lodash' ),
 	consulCfg = {
 		host: nodeName,
 		port: 8501,
-		secure: true
+		secure: true,
+		dc: 'daedalus-spec',
+		token: 'DAEDALUS_TOKEN'
 	};
 
 module.exports = function() {

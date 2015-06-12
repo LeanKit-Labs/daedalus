@@ -1,65 +1,75 @@
 var _ = require( 'lodash' );
 var debug = require( 'debug' )( 'daedalus:agent' );
 
+var tokenizeFn = function( client, options ) {
+	if ( client.ACL_TOKEN ) {
+		options = _.merge( { token: client.ACL_TOKEN }, options );
+	}
+	return options;
+};
+
+var tokenize;
+
 function normalizeResult( result ) {
 	return result[ 0 ];
 }
 
 function deregisterCheck( agent, checkId ) {
-	return agent.check.deregister( checkId )
-		.then( normalizeResult );
+	return agent.check.deregister( tokenize( {
+		id: checkId
+	} ) ).then( normalizeResult );
 }
 
 function failCheck( agent, checkId, note ) {
-	return agent.check.fail( {
+	return agent.check.fail( tokenize( {
 		id: checkId,
 		note: note
-	} ).then( normalizeResult );
+	} ) ).then( normalizeResult );
 }
 
 function listChecks( agent ) {
-	return agent.check.list()
+	return agent.check.list( tokenize( {} ) )
 		.then( normalizeResult );
 }
 
 function passCheck( agent, checkId, note ) {
-	return agent.check.pass( {
+	return agent.check.pass( tokenize( {
 		id: checkId,
 		note: note
-	} ).then( normalizeResult );
+	} ) ).then( normalizeResult );
 }
 
 function registerCheck( agent, check ) {
-	return agent.check.register( check )
+	return agent.check.register( tokenize( check ) )
 		.then( normalizeResult );
 }
 
 function warnCheck( agent, checkId, note ) {
-	return agent.check.warn( {
+	return agent.check.warn( tokenize( {
 		id: checkId,
 		note: note
-	} ).then( normalizeResult );
+	} ) ).then( normalizeResult );
 }
 
 function deregister( agent, hostName, serviceId ) {
 	var id = [ serviceId, hostName ].join( '@' );
-	return agent.service.deregister( {
+	return agent.service.deregister( tokenize( {
 		id: id
-	} );
+	} ) );
 }
 
 function getInfo( agent ) {
-	return agent.self()
+	return agent.self( tokenize( {} ) )
 		.then( normalizeResult );
 }
 
 function listMembers( agent ) {
-	return agent.members()
+	return agent.members( tokenize( {} ) )
 		.then( normalizeResult );
 }
 
 function listServices( agent, address ) {
-	return agent.service.list()
+	return agent.service.list( tokenize( {} ) )
 		.then( function( result ) {
 			var list = result[ 0 ];
 
@@ -72,31 +82,33 @@ function listServices( agent, address ) {
 }
 
 function joinNode( agent, nodeUrl, wan ) {
-	return agent.join( {
+	return agent.join( tokenize( {
 		address: nodeUrl,
 		wan: wan
-	} ).then( normalizeResult );
+	} ) ).then( normalizeResult );
 }
 
 function leaveNode( agent, nodeUrl ) {
-	return agent.forceLeave( {
+	return agent.forceLeave( tokenize( {
 		node: nodeUrl
-	} ).then( normalizeResult );
+	} ) ).then( normalizeResult );
 }
 
 function register( agent, hostName, name, port, tags, check ) {
-	var props = {
+	var props = tokenize( {
 		id: [ name, hostName ].join( '@' ),
 		name: name,
 		tags: tags,
 		port: port,
 		check: check
-	};
+	} );
 
 	return agent.service.register( props );
 }
 
 module.exports = function( dc, client, hostName ) {
+
+	tokenize = tokenizeFn.bind( undefined, client );
 
 	var agent = client.agent;
 

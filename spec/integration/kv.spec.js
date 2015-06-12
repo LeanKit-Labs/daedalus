@@ -1,7 +1,7 @@
 var should = require( 'should' );
 var _ = require( 'lodash' ),
 	consulCfg = require( './consul.config.js' )(),
-	api = require( '../../src/consul.js' )( 'daedalus-spec', consulCfg );
+	api = require( '../../src/consul.js' )( consulCfg );
 
 describe( 'when trying to get non-existent key', function() {
 	var result;

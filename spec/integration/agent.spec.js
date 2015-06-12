@@ -2,7 +2,7 @@ require( 'should' );
 var consulCfg = require( './consul.config.js' )(),
 	nodeName = consulCfg.host,
 	_ = require( 'lodash' ),
-	api = require( '../../src/consul.js' )( 'daedalus-spec', consulCfg );
+	api = require( '../../src/consul.js' )( consulCfg );
 
 describe( 'when getting a list of services without any', function() {
 	var result;

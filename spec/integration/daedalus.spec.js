@@ -3,8 +3,8 @@ var path = require( 'path' );
 var _ = require( 'lodash' );
 var consulCfg = require( './consul.config.js' )();
 var consulCfgCopy = require( './consul.config.js' )();
-var api = require( '../../src/consul.js' )( 'daedalus-spec', consulCfg );
-var daedalus = require( '../../src/index.js' )( 'test', { dc: 'daedalus-spec', consul: consulCfgCopy } );
+var api = require( '../../src/consul.js' )( consulCfg );
+var daedalus = require( '../../src/index.js' )( 'test', consulCfgCopy );
 var when = require( 'when' );
 var duration = 3000;
 

@@ -1,6 +1,15 @@
 var _ = require( 'lodash' );
 var DEFAULT_TIMEOUT = 60000;
 
+var tokenizeFn = function( client, options ) {
+	if ( client.ACL_TOKEN ) {
+		options = _.merge( { token: client.ACL_TOKEN }, options );
+	}
+	return options;
+};
+
+var tokenize;
+
 var indexCache = {
 	serviceList: 0,
 	services: {},
@@ -24,12 +33,12 @@ function normalizeResult( result ) {
 }
 
 function getNode( dc, catalog, name, wait ) {
-	var query = {
+	var query = tokenize( {
 		node: name,
 		dc: dc,
 		wait: wait,
 		timeout: DEFAULT_TIMEOUT
-	};
+	} );
 
 	if ( wait && indexCache.nodes[ name ] ) {
 		query.index = indexCache.nodes[ name ];
@@ -46,13 +55,13 @@ function getNode( dc, catalog, name, wait ) {
 
 function getService( dc, catalog, name, tag, wait ) {
 
-	var query = {
+	var query = tokenize( {
 		service: name,
 		dc: dc,
 		wait: wait,
 		tag: tag,
 		timeout: DEFAULT_TIMEOUT
-	};
+	} );
 
 	if ( wait && indexCache.services[ name ] ) {
 		query.index = indexCache.services[ name ];
@@ -68,15 +77,15 @@ function getService( dc, catalog, name, tag, wait ) {
 }
 
 function listDatacenters( catalog ) {
-	return catalog.datacenters().then( normalizeResult );
+	return catalog.datacenters( tokenize( {} ) ).then( normalizeResult );
 }
 
 function listNodes( dc, catalog, wait ) {
-	var query = {
+	var query = tokenize( {
 		dc: dc,
 		wait: wait,
 		timeout: DEFAULT_TIMEOUT
-	};
+	} );
 
 	if ( wait && indexCache.nodeList ) {
 		query.index = indexCache.nodeList;
@@ -92,11 +101,11 @@ function listNodes( dc, catalog, wait ) {
 }
 
 function listServices( dc, catalog, wait ) {
-	var query = {
+	var query = tokenize( {
 		dc: dc,
 		wait: wait,
 		timeout: DEFAULT_TIMEOUT
-	};
+	} );
 
 	if ( wait && indexCache.serviceList ) {
 		query.index = indexCache.serviceList;
@@ -123,6 +132,9 @@ function normalizeService( doc ) {
 }
 
 module.exports = function( dc, client, hostName, port, version ) {
+
+	tokenize = tokenizeFn.bind( undefined, client );
+
 	var catalog = client.catalog;
 
 	version = version || 'v1';
